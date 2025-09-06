@@ -144,14 +144,5 @@ export const mockProducts: Product[] = [
   }
 ];
 
-// Mock admin user for demo
-export const adminUser = {
-  email: 'admin@lab404.com',
-  password: 'admin123'
-};
-
-// WhatsApp configuration
-export const whatsappConfig = {
-  phoneNumber: '+1234567890', // Replace with actual LAB404 WhatsApp number
-  businessName: 'LAB404 Electronics'
-};
+// Export configurations for backward compatibility (now managed by env.ts)
+export { whatsappConfig, adminConfig as adminUser } from './env';

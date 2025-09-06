@@ -17,7 +17,7 @@ interface ContactFormData {
 const ContactFormSection = () => {
   const [formData, setFormData] = useState<ContactFormData>({
     firstName: '',
-    phoneNumber: '+961',
+    phoneNumber: import.meta.env.VITE_COMPANY_PHONE || '+961',
     email: '',
     message: ''
   });

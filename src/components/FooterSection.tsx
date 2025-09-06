@@ -9,7 +9,7 @@ const FooterSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <h3 className="text-xl font-bold text-white">LAB404</h3>
+            <h3 className="text-xl font-bold text-white">{import.meta.env.VITE_COMPANY_NAME || 'LAB404'}</h3>
             <p className="text-gray-300 text-sm leading-relaxed">
               Your trusted partner for electronics and tech parts in Lebanon. 
               We provide quality components and expert guidance for all your projects.
@@ -116,11 +116,11 @@ const FooterSection = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="h-4 w-4 text-blue-400" />
-                <span className="text-gray-300 text-sm">+961 XX XXX XXX</span>
+                <span className="text-gray-300 text-sm">{import.meta.env.VITE_COMPANY_PHONE || '+961 XX XXX XXX'}</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-4 w-4 text-blue-400" />
-                <span className="text-gray-300 text-sm">info@lab404.com</span>
+                <span className="text-gray-300 text-sm">{import.meta.env.VITE_COMPANY_EMAIL || 'info@lab404.com'}</span>
               </div>
               <div className="flex items-start space-x-3">
                 <MapPin className="h-4 w-4 text-blue-400 mt-1" />
@@ -136,7 +136,7 @@ const FooterSection = () => {
         <div className="border-t border-gray-800 pt-8">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <p className="text-gray-400 text-sm">
-              © 2024 LAB404. All rights reserved.
+              © 2024 {import.meta.env.VITE_COMPANY_NAME || 'LAB404'}. All rights reserved.
             </p>
             <div className="flex space-x-6">
               <a href="#" className="text-gray-400 hover:text-white transition-colors text-sm">

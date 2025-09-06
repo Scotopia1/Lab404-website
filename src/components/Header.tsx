@@ -27,14 +27,14 @@ const Header = () => {
             <Link to="/" className="flex items-center space-x-2">
               <img 
                 src="/uploads/cropped-LAB404-Logo.png" 
-                alt="LAB404" 
+                alt={import.meta.env.VITE_COMPANY_NAME || 'LAB404'} 
                 className="h-8 w-auto"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
                 }}
               />
-              <span className="text-xl font-bold text-gray-900">LAB404</span>
+              <span className="text-xl font-bold text-gray-900">{import.meta.env.VITE_COMPANY_NAME || 'LAB404'}</span>
             </Link>
           </div>
 
