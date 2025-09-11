@@ -2,7 +2,10 @@
 // Centralized configuration management for the application
 
 interface EnvConfig {
-  // Supabase
+  // Database
+  databaseUrl: string;
+  
+  // Supabase (kept for backward compatibility)
   supabaseUrl: string;
   supabaseAnonKey: string;
   
@@ -56,7 +59,10 @@ const getBoolEnvVar = (key: string, fallback: boolean = false): boolean => {
 
 // Centralized environment configuration
 export const env: EnvConfig = {
-  // Supabase Configuration
+  // Database Configuration
+  databaseUrl: getEnvVar('VITE_DATABASE_URL', 'postgresql://postgres:[YOUR-PASSWORD]@db.ndzypstmjawxouxazkkv.supabase.co:5432/postgres'),
+  
+  // Supabase Configuration (kept for backward compatibility)
   supabaseUrl: getEnvVar('VITE_SUPABASE_URL', 'https://ndzypstmjawxouxazkkv.supabase.co'),
   supabaseAnonKey: getEnvVar('VITE_SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kenlwc3RtamF3eG91eGF6a2t2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNzMyODksImV4cCI6MjA3Mjc0OTI4OX0.UQjeTA-BrxD7K-KLY9fJM3SllfMzSmOnkGJU_FOfv1c'),
   
@@ -66,7 +72,7 @@ export const env: EnvConfig = {
   
   // Admin Configuration
   adminEmail: getEnvVar('VITE_ADMIN_EMAIL', 'admin@lab404.com'),
-  adminPassword: getEnvVar('VITE_ADMIN_PASSWORD', 'admin123'),
+  adminPassword: getEnvVar('VITE_ADMIN_PASSWORD', 'please_change_this_password'),
   
   // Company Information
   companyName: getEnvVar('VITE_COMPANY_NAME', 'LAB404 Electronics'),
@@ -99,8 +105,7 @@ export const env: EnvConfig = {
 // Validation function to check required environment variables
 export const validateEnv = (): void => {
   const requiredVars = [
-    'VITE_SUPABASE_URL',
-    'VITE_SUPABASE_ANON_KEY',
+    'VITE_DATABASE_URL',
     'VITE_WHATSAPP_PHONE_NUMBER',
   ];
   
@@ -109,6 +114,29 @@ export const validateEnv = (): void => {
   if (missing.length > 0 && !env.enableMockData) {
     console.warn('Missing environment variables:', missing);
     console.warn('Consider creating a .env.local file with required values');
+    console.warn('See .env.example for a template');
+  }
+
+  // Security warnings
+  if (env.adminPassword === 'admin123' || env.adminPassword === 'please_change_this_password') {
+    if (isProd()) {
+      console.error('🚨 SECURITY WARNING: Default admin password detected in production!');
+      console.error('Please change the VITE_ADMIN_PASSWORD environment variable.');
+    } else {
+      console.warn('⚠️  Using default admin password. Change this before deploying to production.');
+    }
+  }
+
+  // Validate Supabase URL format
+  if (env.supabaseUrl && !env.supabaseUrl.includes('.supabase.co')) {
+    console.warn('⚠️  Supabase URL format may be incorrect. Expected format: https://project.supabase.co');
+  }
+
+  // Check for common development mistakes
+  if (isProd()) {
+    if (env.isDev || env.enableMockData) {
+      console.error('🚨 PRODUCTION WARNING: Development flags are enabled in production!');
+    }
   }
 };
 
@@ -143,4 +171,8 @@ export const companyConfig = {
   phone: env.companyPhone,
   email: env.companyEmail,
   website: env.companyWebsite,
+};
+
+export const databaseConfig = {
+  url: env.databaseUrl,
 };

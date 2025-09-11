@@ -1,16 +1,4 @@
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  compareAtPrice?: number;
-  category: string;
-  images: string[];
-  specifications: { name: string; value: string }[];
-  tags: string[];
-  inStock: boolean;
-  featured: boolean;
-}
+import { Product } from './types';
 
 export const categories = [
   { id: 'smartphones', name: 'Smartphones', image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400' },

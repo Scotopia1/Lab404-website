@@ -1,37 +1,68 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Package, Users, BarChart3, Settings, LogOut, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Users, BarChart3, Settings, LogOut, Eye, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { mockProducts, adminUser } from '@/lib/mockData';
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/lib/services/database';
+import type { Product } from '@/lib/types';
 
 const Dashboard = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
+  const { user, isAuthenticated, isAdmin, signOut } = useAuth();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    inStockProducts: 0,
+    categories: 0,
+    featuredProducts: 0
+  });
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email === adminUser.email && password === adminUser.password) {
-      setIsLoggedIn(true);
-      setLoginError('');
-    } else {
-      setLoginError('Invalid email or password');
-    }
-  };
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      if (!isAuthenticated || !isAdmin()) return;
+      
+      try {
+        setLoading(true);
+        
+        // Load all products for dashboard stats
+        const result = await db.products.getAll({ limit: 100 });
+        
+        if (result.data) {
+          setProducts(result.data);
+          
+          // Calculate stats
+          const totalProducts = result.data.length;
+          const inStockProducts = result.data.filter(p => p.inStock).length;
+          const categories = new Set(result.data.map(p => p.category)).size;
+          const featuredProducts = result.data.filter(p => p.featured).length;
+          
+          setStats({
+            totalProducts,
+            inStockProducts,
+            categories,
+            featuredProducts
+          });
+        }
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setEmail('');
+    loadDashboardData();
+  }, [isAuthenticated, isAdmin]);
+
+  const handleLogout = async () => {
+    await signOut();
     setPassword('');
   };
 
-  if (!isLoggedIn) {
+  // Protected route check is handled by RequireAdmin in App.tsx, 
+  // but add double-check for extra security
+  if (!isAuthenticated || !isAdmin()) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">

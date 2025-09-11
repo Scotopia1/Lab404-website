@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAccessibleAnnouncement } from '@/hooks/useFocusManagement';
 import { Search, X, Clock, TrendingUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { announce } = useAccessibleAnnouncement();
 
   useEffect(() => {
     // Load search history and popular searches
@@ -58,6 +60,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
       const newSuggestions = searchEngine.current.getSuggestions(value);
       setSuggestions(newSuggestions);
       setShowDropdown(true);
+      
+      // Announce to screen readers
+      setTimeout(() => {
+        announce(`${newSuggestions.length} suggestions available. Use arrow keys to navigate.`);
+      }, 100);
     } else {
       setSuggestions([]);
       setShowDropdown(value.trim().length === 0 && showSuggestions); // Show history when empty
@@ -102,6 +109,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setQuery(searchQuery);
     setShowDropdown(false);
     setSelectedIndex(-1);
+    
+    // Announce search action
+    announce(`Searching for ${searchQuery}`);
 
     // Update search history
     setSearchHistory(prev => {
@@ -144,11 +154,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
               {searchHistory.slice(0, 5).map((item, index) => (
                 <motion.button
                   key={`history-${index}`}
+                  id={`search-option-${index}`}
                   className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3 ${
                     selectedIndex === index ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                   }`}
                   onClick={() => handleSearch(item)}
                   whileHover={{ backgroundColor: '#f9fafb' }}
+                  role="option"
+                  aria-selected={selectedIndex === index}
                 >
                   <Clock className="h-4 w-4 text-gray-400" />
                   <span>{item}</span>
@@ -165,11 +178,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
               {popularSearches.slice(0, 5).map((item, index) => (
                 <motion.button
                   key={`popular-${index}`}
+                  id={`search-option-${searchHistory.length + index}`}
                   className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3 ${
                     selectedIndex === searchHistory.length + index ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
                   }`}
                   onClick={() => handleSearch(item)}
                   whileHover={{ backgroundColor: '#f9fafb' }}
+                  role="option"
+                  aria-selected={selectedIndex === searchHistory.length + index}
                 >
                   <TrendingUp className="h-4 w-4 text-gray-400" />
                   <span>{item}</span>
@@ -187,11 +203,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
         {suggestions.map((suggestion, index) => (
           <motion.button
             key={`suggestion-${index}`}
+            id={`search-option-${index}`}
             className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3 ${
               selectedIndex === index ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
             }`}
             onClick={() => handleSearch(suggestion.text)}
             whileHover={{ backgroundColor: '#f9fafb' }}
+            role="option"
+            aria-selected={selectedIndex === index}
           >
             <Search className="h-4 w-4 text-gray-400" />
             <span>{suggestion.text}</span>
@@ -225,6 +244,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
           onFocus={handleFocus}
           placeholder={placeholder}
           className="pl-10 pr-10 h-10 w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+          role="combobox"
+          aria-expanded={showDropdown}
+          aria-haspopup="listbox"
+          aria-label="Search products"
+          aria-describedby="search-instructions"
+          aria-activedescendant={selectedIndex >= 0 ? `search-option-${selectedIndex}` : undefined}
         />
         {query && (
           <Button
@@ -232,10 +257,15 @@ const SearchBar: React.FC<SearchBarProps> = ({
             size="sm"
             onClick={clearSearch}
             className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-gray-100"
+            aria-label="Clear search"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
+        
+        <div id="search-instructions" className="sr-only">
+          Use arrow keys to navigate suggestions, enter to search, escape to close
+        </div>
       </div>
 
       <AnimatePresence>
@@ -246,6 +276,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
             className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
+            role="listbox"
+            aria-label="Search suggestions"
           >
             {renderDropdownContent()}
           </motion.div>

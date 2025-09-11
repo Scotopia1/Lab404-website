@@ -1,12 +1,41 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import ProductCard from '@/components/ProductCard';
-import { mockProducts } from '@/lib/mockData';
+import { db } from '@/lib/services/database';
+import type { Product } from '@/lib/types';
+import { ComponentErrorBoundary } from '@/components/ErrorBoundary';
 
 const FeaturedProductsSection = () => {
-  const featuredProducts = mockProducts.filter(product => product.featured);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadFeaturedProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const result = await db.products.getFeatured(8);
+        
+        if (result.error) {
+          setError(result.error);
+        } else if (result.data) {
+          setFeaturedProducts(result.data);
+        }
+      } catch (err) {
+        console.error('Error loading featured products:', err);
+        setError('Failed to load featured products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFeaturedProducts();
+  }, []);
 
   const scaleOnHover = {
     whileHover: { scale: 1.05 },
@@ -14,6 +43,40 @@ const FeaturedProductsSection = () => {
     transition: { type: "spring", stiffness: 300, damping: 20 }
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 mb-4" />
+            <p className="text-lg text-gray-600">Loading featured products...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <p className="text-lg text-red-600 mb-4">Failed to load featured products</p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // No products state
   if (featuredProducts.length === 0) {
     return null;
   }
@@ -37,7 +100,7 @@ const FeaturedProductsSection = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {featuredProducts.slice(0, 8).map((product, index) => (
+          {featuredProducts.map((product, index) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 40 }}
@@ -71,4 +134,11 @@ const FeaturedProductsSection = () => {
   );
 };
 
-export default FeaturedProductsSection;
+// Export with error boundary
+const FeaturedProductsSectionWithErrorBoundary = () => (
+  <ComponentErrorBoundary>
+    <FeaturedProductsSection />
+  </ComponentErrorBoundary>
+);
+
+export default FeaturedProductsSectionWithErrorBoundary;

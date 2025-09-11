@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Star, Shield, Truck, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Star, Shield, Truck, RefreshCw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,35 +8,111 @@ import { Separator } from '@/components/ui/separator';
 import Header from '@/components/Header';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import ProductCard from '@/components/ProductCard';
-import { mockProducts } from '@/lib/mockData';
+import { db } from '@/lib/services/database';
+import type { Product } from '@/lib/types';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadProductDetails = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Load main product
+        const productResult = await db.products.getById(id);
+        
+        if (productResult.error) {
+          setError(productResult.error);
+          return;
+        }
+        
+        if (!productResult.data) {
+          setError('Product not found');
+          return;
+        }
+        
+        setProduct(productResult.data);
+        
+        // Load related products in the same category
+        const relatedResult = await db.products.getAll({
+          category: productResult.data.category,
+          limit: 5
+        });
+        
+        if (relatedResult.data) {
+          // Filter out current product and limit to 4
+          const related = relatedResult.data
+            .filter(p => p.id !== id)
+            .slice(0, 4);
+          setRelatedProducts(related);
+        }
+        
+      } catch (err) {
+        console.error('Error loading product details:', err);
+        setError('Failed to load product details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProductDetails();
+  }, [id]);
   
-  const product = mockProducts.find(p => p.id === id);
-  
-  if (!product) {
+  // Loading state
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h1>
-          <p className="text-gray-600 mb-8">The product you're looking for doesn't exist.</p>
-          <Link to="/store">
-            <Button>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Store
-            </Button>
-          </Link>
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-blue-600 mb-4" />
+          <p className="text-lg text-gray-600">Loading product details...</p>
         </div>
       </div>
     );
   }
 
-  const relatedProducts = mockProducts
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
+  // Error state
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            {error === 'Product not found' ? 'Product Not Found' : 'Error Loading Product'}
+          </h1>
+          <p className="text-gray-600 mb-8">
+            {error === 'Product not found' 
+              ? "The product you're looking for doesn't exist." 
+              : 'There was a problem loading the product details.'
+            }
+          </p>
+          <div className="flex justify-center space-x-4">
+            <Link to="/store">
+              <Button>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Store
+              </Button>
+            </Link>
+            {error !== 'Product not found' && (
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -1,6 +1,7 @@
 import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Product, whatsappConfig } from '@/lib/mockData';
+import type { Product } from '@/lib/types';
+import { whatsappConfig } from '@/lib/env';
 
 interface WhatsAppButtonProps {
   product: Product;
@@ -38,8 +39,8 @@ Thank you!`;
   return (
     <Button
       onClick={handleWhatsAppClick}
-      variant={variant}
-      className={`bg-green-600 hover:bg-green-700 text-white transition-all duration-200 active:scale-95 flex items-center justify-center ${className}`}
+      variant={variant === 'default' ? 'default' : variant}
+      className={`whatsapp-button hover:bg-accent/90 active:scale-95 flex items-center justify-center shadow-sm ${className}`}
     >
       <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0" />
       <span className="truncate font-medium">Buy via WhatsApp</span>
