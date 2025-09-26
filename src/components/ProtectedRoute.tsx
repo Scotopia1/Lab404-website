@@ -109,6 +109,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return showFallback ? <AuthLoadingFallback /> : null;
   }
 
+  // Development bypass - completely skip authentication in dev mode
+  if (import.meta.env.DEV && localStorage.getItem('lab404_dev_bypass_all') === 'true') {
+    console.log('🔓 Development mode: Bypassing all authentication checks');
+    return <>{children}</>;
+  }
+
   // Check authentication requirement
   if (requireAuth && !isAuthenticated) {
     if (fallbackPath) {

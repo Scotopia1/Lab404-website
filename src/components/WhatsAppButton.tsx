@@ -40,10 +40,13 @@ Thank you!`;
     <Button
       onClick={handleWhatsAppClick}
       variant={variant === 'default' ? 'default' : variant}
-      className={`whatsapp-button hover:bg-accent/90 active:scale-95 flex items-center justify-center shadow-sm ${className}`}
+      className={`bg-green-600 hover:bg-green-700 text-white active:scale-95 flex items-center justify-center shadow-sm touch-action-manipulation font-semibold ${className}`}
     >
       <MessageCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-      <span className="truncate font-medium">Buy via WhatsApp</span>
+      <span className="truncate">
+        <span className="sm:hidden">WhatsApp</span>
+        <span className="hidden sm:inline">WhatsApp</span>
+      </span>
     </Button>
   );
 };

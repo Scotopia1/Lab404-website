@@ -4,14 +4,21 @@ import { Plus, Edit, Trash2, Package, Users, BarChart3, Settings, LogOut, Eye, L
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/services/database';
+import { mockProducts } from '@/lib/mockData';
 import type { Product } from '@/lib/types';
 
 const Dashboard = () => {
   const { user, isAuthenticated, isAdmin, signOut } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
   const [stats, setStats] = useState({
     totalProducts: 0,
     inStockProducts: 0,
@@ -54,6 +61,12 @@ const Dashboard = () => {
 
     loadDashboardData();
   }, [isAuthenticated, isAdmin]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    // Login logic would go here
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -121,28 +134,28 @@ const Dashboard = () => {
     );
   }
 
-  const stats = [
+  const dashboardStats = [
     {
       title: 'Total Products',
-      value: mockProducts.length,
+      value: stats.totalProducts,
       icon: Package,
       color: 'text-blue-600'
     },
     {
       title: 'In Stock',
-      value: mockProducts.filter(p => p.inStock).length,
+      value: stats.inStockProducts,
       icon: Package,
       color: 'text-green-600'
     },
     {
       title: 'Categories',
-      value: new Set(mockProducts.map(p => p.category)).size,
+      value: stats.categories,
       icon: BarChart3,
       color: 'text-purple-600'
     },
     {
       title: 'Featured',
-      value: mockProducts.filter(p => p.featured).length,
+      value: stats.featuredProducts,
       icon: Package,
       color: 'text-orange-600'
     }
@@ -183,7 +196,7 @@ const Dashboard = () => {
         
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat) => (
+          {dashboardStats.map((stat) => (
             <Card key={stat.title}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -211,10 +224,12 @@ const Dashboard = () => {
                   Add New Product
                 </Button>
               </Link>
-              <Button variant="outline">
-                <Package className="h-4 w-4 mr-2" />
-                Import from Alibaba
-              </Button>
+              <Link to="/alibaba-import">
+                <Button variant="outline">
+                  <Package className="h-4 w-4 mr-2" />
+                  Import from Alibaba
+                </Button>
+              </Link>
               <Button variant="outline">
                 <BarChart3 className="h-4 w-4 mr-2" />
                 View Analytics

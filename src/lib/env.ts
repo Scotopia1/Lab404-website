@@ -72,14 +72,14 @@ export const env: EnvConfig = {
   
   // Admin Configuration
   adminEmail: getEnvVar('VITE_ADMIN_EMAIL', 'admin@lab404.com'),
-  adminPassword: getEnvVar('VITE_ADMIN_PASSWORD', 'please_change_this_password'),
+  adminPassword: getEnvVar('VITE_ADMIN_PASSWORD', 'your-very-secure-admin-password'),
   
   // Company Information
   companyName: getEnvVar('VITE_COMPANY_NAME', 'LAB404 Electronics'),
   companyAddress: getEnvVar('VITE_COMPANY_ADDRESS', 'Your Business Address'),
   companyCity: getEnvVar('VITE_COMPANY_CITY', 'Beirut'),
   companyCountry: getEnvVar('VITE_COMPANY_COUNTRY', 'Lebanon'),
-  companyPhone: getEnvVar('VITE_COMPANY_PHONE', '+961 XX XXX XXX'),
+  companyPhone: getEnvVar('VITE_COMPANY_PHONE', '+961XXXXXXXX'),
   companyEmail: getEnvVar('VITE_COMPANY_EMAIL', 'info@lab404.com'),
   companyWebsite: getEnvVar('VITE_COMPANY_WEBSITE', 'https://lab404.com'),
   
@@ -93,7 +93,7 @@ export const env: EnvConfig = {
   
   // Development Configuration
   isDev: getBoolEnvVar('VITE_DEV_MODE', true),
-  apiBaseUrl: getEnvVar('VITE_API_BASE_URL', 'http://localhost:3000'),
+  apiBaseUrl: getEnvVar('VITE_API_BASE_URL', 'http://localhost:3000/api'),
   
   // External Services
   cdnUrl: getEnvVar('VITE_CDN_URL'),

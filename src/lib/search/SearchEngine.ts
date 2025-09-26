@@ -245,7 +245,7 @@ export class ProductSearchEngine {
       product.category,
       product.brand || '',
       ...(product.tags || []),
-      ...(product.specifications || []).map(spec => `${spec.name} ${spec.value}`)
+      ...Object.entries(product.specifications || {}).map(([key, value]) => `${key} ${value}`)
     ];
     
     return parts.filter(Boolean).join(' ').toLowerCase();

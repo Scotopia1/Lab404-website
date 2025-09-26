@@ -50,88 +50,112 @@ export default defineConfig(({ mode }) => ({
       }
     }),
     // Bundle analyzer - only in build mode
-    mode === 'production' && visualizer({
-      filename: 'dist/bundle-analysis.html',
-      open: false,
+    mode === 'analyze' && visualizer({
+      filename: 'dist/stats.html',
+      open: true,
       gzipSize: true,
       brotliSize: true,
-    }),
+    })
   ].filter(Boolean),
-  // Tree-shaking and optimization
-  define: {
-    __DEV__: mode === 'development',
+
+  // Optimize dependencies for better performance
+  optimizeDeps: {
+    include: [
+      '@radix-ui/react-slider',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-tooltip',
+      '@radix-ui/react-select',
+      '@radix-ui/react-separator',
+      '@radix-ui/react-alert-dialog',
+      'framer-motion',
+      'lucide-react',
+      'react-router-dom',
+      'sonner',
+      'zustand',
+      '@tanstack/react-query'
+    ],
+    exclude: [],
+    // Force dep pre-bundling for faster HMR
+    force: mode === 'development'
   },
+
+  // Enhanced build performance
   esbuild: {
+    // Remove console and debugger in production
     drop: mode === 'production' ? ['console', 'debugger'] : [],
+    // Optimize for development
+    target: 'es2020'
   },
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  build: {
-    target: 'esnext',
-    minify: mode === 'production' ? 'esbuild' : false,
-    sourcemap: mode === 'development',
-    chunkSizeWarningLimit: 500,
-    // Production optimizations
-    cssCodeSplit: true,
-    assetsInlineLimit: 4096, // 4KB
-    reportCompressedSize: true,
-    // Optimize dependencies
-    commonjsOptions: {
-      include: [/node_modules/],
-      transformMixedEsModules: true
+
+  // Development server configuration
+  server: {
+    port: 5173,
+    open: true,
+    host: true,
+    hmr: {
+      overlay: true,
+      port: 24678 // Use a different port for HMR to avoid conflicts
     },
-    rollupOptions: {
-      // External dependencies that shouldn't be bundled
-      external: [],
-      // Input configuration
-      input: {
-        main: path.resolve(__dirname, 'index.html'),
-      },
-      // Optimization options
-      treeshake: {
-        moduleSideEffects: false,
-        propertyReadSideEffects: false,
-        unknownGlobalSideEffects: false
-      },
-      output: {
-        manualChunks: (id) => {
-          // Only split large vendor chunks to avoid empty chunks
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'react';
-            }
-            if (id.includes('@radix') || id.includes('lucide-react')) {
-              return 'ui';
-            }
-            if (id.includes('@supabase') || id.includes('@tanstack')) {
-              return 'data';
-            }
-            if (id.includes('framer-motion') || id.includes('zustand')) {
-              return 'utils';
-            }
-            return 'vendor';
-          }
-        },
-        // Asset naming for better caching
-        assetFileNames: (assetInfo) => {
-          const info = assetInfo.name!.split('.');
-          const ext = info[info.length - 1];
-          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
-            return `assets/images/[name]-[hash][extname]`;
-          }
-          if (/css/i.test(ext)) {
-            return `assets/css/[name]-[hash][extname]`;
-          }
-          return `assets/[name]-[hash][extname]`;
-        },
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js',
-      },
+    // Proxy API calls to backend in development
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            console.log('🔴 Proxy error:', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req) => {
+            console.log('🔵 Proxy request:', req.method, req.url);
+          });
+        }
+      }
     },
+    // Performance improvements for development
+    fs: {
+      // Allow serving files outside of workspace root
+      allow: ['..']
+    }
   },
+
+  // Build optimizations
+  build: {
+    target: 'es2020',
+    sourcemap: mode === 'development',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tooltip'],
+          motion: ['framer-motion'],
+          query: ['@tanstack/react-query'],
+          store: ['zustand']
+        }
+      }
+    },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1600
+  },
+
+  // Environment variables
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
+  },
+
+  // CSS configuration
+  css: {
+    postcss: './postcss.config.js',
+    devSourcemap: true
+  }
 }));
 
 // Performance tips logged during build

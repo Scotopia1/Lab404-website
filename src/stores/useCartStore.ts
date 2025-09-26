@@ -487,7 +487,9 @@ export const useCartStore = create<CartStore>()(
 
           const shipping = calculateShipping(subtotal, state.shippingThreshold, state.defaultShipping)
           const tax = (subtotal + shipping) * state.taxRate
-          const discount = 0 // TODO: Implement discount logic
+          // Future enhancement: Implement discount/coupon logic here
+          // For now, discounts are not applied
+          const discount = 0
           const total = subtotal + tax + shipping - discount
 
           return {

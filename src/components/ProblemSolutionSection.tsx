@@ -40,9 +40,9 @@ const ProblemSolutionSection = () => {
               viewport={{ once: true }}
               whileHover={{ y: -5 }}
             >
-              <Card className="text-center p-6 sm:p-8 hover:shadow-xl transition-all duration-300 h-full">
+              <Card className="text-center p-6 sm:p-8 hover:shadow-xl transition-all duration-300 h-full bg-white border border-gray-200">
                 <CardContent className="space-y-4">
-                  <motion.div 
+                  <motion.div
                     className="w-16 h-16 sm:w-20 sm:h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto"
                     whileHover={{ scale: 1.1, rotate: 5 }}
                   >
@@ -65,9 +65,9 @@ const ProblemSolutionSection = () => {
               viewport={{ once: true }}
               whileHover={{ y: -5 }}
             >
-              <Card className="text-center p-6 sm:p-8 hover:shadow-xl transition-all duration-300 h-full">
+              <Card className="text-center p-6 sm:p-8 hover:shadow-xl transition-all duration-300 h-full bg-white border border-gray-200">
                 <CardContent className="space-y-4">
-                  <motion.div 
+                  <motion.div
                     className="w-16 h-16 sm:w-20 sm:h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto"
                     whileHover={{ scale: 1.1, rotate: -5 }}
                   >
@@ -90,13 +90,13 @@ const ProblemSolutionSection = () => {
               viewport={{ once: true }}
               whileHover={{ y: -8, scale: 1.02 }}
             >
-              <Card className="text-center p-6 sm:p-8 hover:shadow-2xl transition-all duration-300 border-2 border-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 h-full relative overflow-hidden">
+              <Card className="text-center p-6 sm:p-8 hover:shadow-2xl transition-all duration-300 border-2 border-blue-500 bg-gradient-to-br from-blue-50 to-white h-full relative overflow-hidden shadow-lg">
                 <CardContent className="space-y-4 relative z-10">
                   <motion.div 
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-200 rounded-full flex items-center justify-center mx-auto border-2 border-blue-300"
                     whileHover={{ scale: 1.15, rotate: 10 }}
                   >
-                    <Shield className="h-8 w-8 sm:h-10 sm:w-10 text-blue-600" />
+                    <Shield className="h-8 w-8 sm:h-10 sm:w-10 text-blue-700" />
                   </motion.div>
                   <h4 className="text-lg sm:text-xl font-bold text-blue-900">
                     Let LAB404 Help You And Guide You

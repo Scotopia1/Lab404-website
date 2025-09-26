@@ -181,19 +181,26 @@ class ErrorTrackingService {
       setTimeout(() => {
         const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
         if (navigation) {
-          this.capturePerformanceMetric({
-            name: 'page_load_time',
-            value: navigation.loadEventEnd - navigation.navigationStart,
-            unit: 'ms',
-            context: { type: 'navigation' }
-          });
+          const pageLoadTime = navigation.loadEventEnd - navigation.navigationStart;
+          const domContentLoadedTime = navigation.domContentLoadedEventEnd - navigation.navigationStart;
 
-          this.capturePerformanceMetric({
-            name: 'dom_content_loaded',
-            value: navigation.domContentLoadedEventEnd - navigation.navigationStart,
-            unit: 'ms',
-            context: { type: 'navigation' }
-          });
+          if (!isNaN(pageLoadTime) && pageLoadTime > 0) {
+            this.capturePerformanceMetric({
+              name: 'page_load_time',
+              value: pageLoadTime,
+              unit: 'ms',
+              context: { type: 'navigation' }
+            });
+          }
+
+          if (!isNaN(domContentLoadedTime) && domContentLoadedTime > 0) {
+            this.capturePerformanceMetric({
+              name: 'dom_content_loaded',
+              value: domContentLoadedTime,
+              unit: 'ms',
+              context: { type: 'navigation' }
+            });
+          }
         }
       }, 0);
     });

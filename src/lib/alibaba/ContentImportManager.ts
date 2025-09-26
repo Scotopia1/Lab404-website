@@ -49,28 +49,72 @@ export class ContentImportManager {
     options: ContentImportOptions = {}
   ): Promise<ImportResult> {
     const importId = `import_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     try {
-      console.log(`Starting import for: ${alibabaProduct.title}`);
+      console.log('🚀 [FRONTEND] Starting Alibaba product import process');
+      console.log('📋 [FRONTEND] Import Details:', {
+        importId,
+        title: alibabaProduct.title,
+        brand: alibabaProduct.brand,
+        price: alibabaProduct.price,
+        imageCount: alibabaProduct.images?.length || 0,
+        hasDescription: !!alibabaProduct.description,
+        category: alibabaProduct.category,
+        options: options
+      });
+
+      console.log('🔍 [FRONTEND] Raw Alibaba Product Data:', {
+        id: alibabaProduct.id,
+        title: alibabaProduct.title,
+        brand: alibabaProduct.brand,
+        price: alibabaProduct.price,
+        description: alibabaProduct.description?.substring(0, 200) + '...',
+        images: alibabaProduct.images,
+        specifications: alibabaProduct.specifications,
+        features: alibabaProduct.features,
+        tags: alibabaProduct.tags,
+        category: alibabaProduct.category
+      });
 
       // Validate product content
+      console.log('✅ [FRONTEND] Validating product content...');
       const validation = this.validateProductContent(alibabaProduct);
       if (!validation.valid) {
+        console.error('❌ [FRONTEND] Product validation failed:', validation.errors);
         return {
           success: false,
           errors: validation.errors,
           importId
         };
       }
+      console.log('✅ [FRONTEND] Product validation passed');
 
       // Process images (download and optimize)
+      console.log('🖼️ [FRONTEND] Processing product images...');
       const processedImages = await this.processImages(alibabaProduct.images);
+      console.log('✅ [FRONTEND] Images processed successfully:', {
+        originalCount: alibabaProduct.images?.length || 0,
+        processedCount: processedImages.length,
+        processedUrls: processedImages.map(img => img.optimized)
+      });
 
       // Transform to local product format
+      console.log('🔄 [FRONTEND] Transforming to local product format...');
       const localProduct = alibabaContentAPI.transformToLocalProduct(alibabaProduct, options);
-      
+
       // Use processed images
       localProduct.images = processedImages.map(img => img.optimized);
+
+      console.log('📦 [FRONTEND] Transformed Product Data:', {
+        name: localProduct.name,
+        price: localProduct.price,
+        category: localProduct.category,
+        brand: localProduct.brand,
+        imageCount: localProduct.images?.length || 0,
+        tagCount: localProduct.tags?.length || 0,
+        featureCount: localProduct.features?.length || 0,
+        hasSpecifications: !!localProduct.specifications
+      });
 
       // Add import metadata
       const productToSave: CreateProductData = {
@@ -83,12 +127,32 @@ export class ContentImportManager {
         }
       };
 
+      console.log('📝 [FRONTEND] Final product data for API call:', {
+        name: productToSave.name,
+        price: productToSave.price,
+        category: productToSave.category,
+        brand: productToSave.brand,
+        imageCount: productToSave.images?.length || 0,
+        hasImportData: !!productToSave.importData,
+        importId: productToSave.importData?.importId
+      });
+
       // Save to database
+      console.log('💾 [FRONTEND] Sending product to backend API...');
       const savedProduct = await productService.createProduct(productToSave);
-      
+
       if (!savedProduct.data) {
+        console.error('❌ [FRONTEND] Backend API call failed:', savedProduct.error);
         throw new Error(savedProduct.error || 'Failed to save product');
       }
+
+      console.log('✅ [FRONTEND] Product saved successfully via API:', {
+        id: savedProduct.data.id,
+        name: savedProduct.data.name,
+        sku: savedProduct.data.sku,
+        price: savedProduct.data.price,
+        slug: savedProduct.data.slug
+      });
 
       // Record successful import
       const importRecord: ImportRecord = {
@@ -103,7 +167,17 @@ export class ContentImportManager {
 
       this.addToHistory(importRecord);
 
-      console.log(`✅ Successfully imported: ${alibabaProduct.title}`);
+      console.log('🎉 [FRONTEND] Import completed successfully!');
+      console.log('📊 [FRONTEND] Import Summary:', {
+        importId,
+        productId: savedProduct.data.id,
+        productName: savedProduct.data.name,
+        originalTitle: alibabaProduct.title,
+        finalPrice: savedProduct.data.price,
+        originalPrice: alibabaProduct.price,
+        processedImages: processedImages.length,
+        importedAt: importRecord.importedAt
+      });
 
       return {
         success: true,
@@ -113,7 +187,17 @@ export class ContentImportManager {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Import failed';
-      console.error(`❌ Import failed for ${alibabaProduct.title}:`, errorMessage);
+      console.error('❌ [FRONTEND] Product import failed!');
+      console.error('💥 [FRONTEND] Error Details:', {
+        importId,
+        productTitle: alibabaProduct.title,
+        productId: alibabaProduct.id,
+        errorMessage,
+        errorStack: error instanceof Error ? error.stack : null,
+        timestamp: new Date().toISOString(),
+        alibabaUrl: alibabaProduct.id,
+        options
+      });
 
       // Record failed import
       const importRecord: ImportRecord = {
@@ -128,6 +212,12 @@ export class ContentImportManager {
       };
 
       this.addToHistory(importRecord);
+
+      console.error('📝 [FRONTEND] Import failure recorded in history:', {
+        recordId: importRecord.id,
+        productName: importRecord.productName,
+        errorCount: importRecord.errors?.length || 0
+      });
 
       return {
         success: false,
@@ -146,46 +236,92 @@ export class ContentImportManager {
     batchSize: number = 5,
     delayBetweenBatches: number = 1000
   ): Promise<BulkImportResult> {
-    console.log(`🚀 Starting bulk import of ${products.length} products`);
-    
+    console.log('🚀 [FRONTEND] Starting bulk import process');
+    console.log('📊 [FRONTEND] Bulk Import Configuration:', {
+      totalProducts: products.length,
+      batchSize,
+      delayBetweenBatches,
+      estimatedBatches: Math.ceil(products.length / batchSize),
+      globalOptions,
+      productsToImport: products.map(p => ({ id: p.id, title: p.title, price: p.price }))
+    });
+
     const results: ImportResult[] = [];
-    
+    const startTime = Date.now();
+
     // Process in batches to avoid overwhelming the system
     for (let i = 0; i < products.length; i += batchSize) {
       const batch = products.slice(i, i + batchSize);
-      console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(products.length/batchSize)}`);
-      
+      const batchNumber = Math.floor(i/batchSize) + 1;
+      const totalBatches = Math.ceil(products.length/batchSize);
+
+      console.log(`📦 [FRONTEND] Processing batch ${batchNumber}/${totalBatches}`);
+      console.log('🔄 [FRONTEND] Current batch products:', batch.map(p => ({
+        id: p.id,
+        title: p.title,
+        price: p.price
+      })));
+
       // Process batch in parallel
-      const batchPromises = batch.map(product => 
+      const batchPromises = batch.map(product =>
         this.importProduct(product, globalOptions)
       );
-      
+
       const batchResults = await Promise.allSettled(batchPromises);
-      
+
       // Collect results
-      batchResults.forEach(result => {
+      batchResults.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           results.push(result.value);
+          console.log(`✅ [FRONTEND] Batch item ${index + 1} completed:`, {
+            success: result.value.success,
+            productId: result.value.product?.id,
+            productName: result.value.product?.name
+          });
         } else {
-          results.push({
+          const failedResult = {
             success: false,
             errors: [`Batch processing error: ${result.reason}`],
             importId: `failed_${Date.now()}`
+          };
+          results.push(failedResult);
+          console.error(`❌ [FRONTEND] Batch item ${index + 1} failed:`, {
+            reason: result.reason,
+            productTitle: batch[index]?.title
           });
         }
       });
 
+      const batchSuccessful = results.slice(-batch.length).filter(r => r.success).length;
+      console.log(`📊 [FRONTEND] Batch ${batchNumber} complete: ${batchSuccessful}/${batch.length} successful`);
+
       // Add delay between batches (except for last batch)
       if (i + batchSize < products.length) {
-        console.log(`⏱️ Waiting ${delayBetweenBatches}ms before next batch...`);
+        console.log(`⏱️ [FRONTEND] Waiting ${delayBetweenBatches}ms before next batch...`);
         await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
       }
     }
 
     const successful = results.filter(r => r.success);
     const failed = results.filter(r => !r.success);
+    const endTime = Date.now();
+    const totalTime = endTime - startTime;
 
-    console.log(`📊 Bulk import complete: ${successful.length} success, ${failed.length} failed`);
+    console.log('🎉 [FRONTEND] Bulk import process completed!');
+    console.log('📊 [FRONTEND] Final Bulk Import Results:', {
+      totalProcessed: results.length,
+      successful: successful.length,
+      failed: failed.length,
+      successRate: `${((successful.length / results.length) * 100).toFixed(1)}%`,
+      totalTimeMs: totalTime,
+      averageTimePerProduct: `${(totalTime / results.length).toFixed(0)}ms`,
+      successfulProducts: successful.map(s => s.product?.name).filter(Boolean),
+      failedProducts: failed.map((f, i) => ({
+        index: i + 1,
+        errors: f.errors,
+        importId: f.importId
+      }))
+    });
 
     return {
       successful,

@@ -204,7 +204,7 @@ export const GuestOrderForm = ({ onOrderComplete, className = '' }: GuestOrderFo
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+961 XX XXX XXX"
+                  placeholder="+961XXXXXXXX"
                   {...register('phone')}
                   className={errors.phone ? 'border-destructive' : ''}
                 />

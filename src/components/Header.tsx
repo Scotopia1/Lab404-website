@@ -17,9 +17,13 @@ const Header = () => {
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Products', href: '/store' },
+    { name: 'Blog', href: '/blog' },
   ];
 
   const isActive = (path: string) => {
+    if (path === '/blog') {
+      return location.pathname.startsWith('/blog');
+    }
     return location.pathname === path;
   };
 
@@ -31,8 +35,8 @@ const Header = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <img 
-                src="/uploads/cropped-LAB404-Logo.png" 
-                alt={import.meta.env.VITE_COMPANY_NAME || 'LAB404'} 
+                src="/lab404-logo.png"
+                alt={import.meta.env.VITE_COMPANY_NAME || 'LAB404'}
                 className="h-8 w-auto"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
@@ -64,7 +68,7 @@ const Header = () => {
                 className={`text-sm font-medium transition-colors hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-1 py-1 ${
                   isActive(item.href)
                     ? 'text-blue-600 border-b-2 border-blue-600 pb-1'
-                    : 'text-gray-700'
+                    : 'text-gray-600 hover:text-blue-600'
                 }`}
                 aria-current={isActive(item.href) ? 'page' : undefined}
               >
@@ -123,7 +127,7 @@ const Header = () => {
                   className={`block px-3 py-2 rounded-md text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                     isActive(item.href)
                       ? 'text-blue-600 bg-blue-50'
-                      : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                   aria-current={isActive(item.href) ? 'page' : undefined}

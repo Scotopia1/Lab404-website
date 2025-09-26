@@ -207,6 +207,71 @@
   }
 }
 
+/* Product Card Button Grid Enhancements */
+@layer utilities {
+  /* Ensure buttons maintain proper aspect ratio in grid */
+  .product-button-grid {
+    @apply grid grid-cols-2 gap-2;
+  }
+  
+  @media screen and (min-width: 640px) {
+    .product-button-grid {
+      @apply gap-3;
+    }
+  }
+  
+  /* Mobile-first button sizing for product cards */
+  .product-action-button {
+    @apply h-10 min-h-[44px] text-sm font-medium flex items-center justify-center;
+    @apply transition-all duration-200 touch-action-manipulation;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+  
+  @media screen and (min-width: 640px) {
+    .product-action-button {
+      @apply h-11 text-base;
+    }
+  }
+  
+  /* WhatsApp button specific mobile optimizations */
+  .whatsapp-mobile {
+    @apply bg-accent text-accent-foreground;
+  }
+  
+  /* Cart button mobile optimizations */
+  .cart-mobile {
+    @apply bg-secondary text-secondary-foreground border border-border;
+  }
+}
+
+/* Enhanced Product Card Styles */
+@layer components {
+  .product-card-modern {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+    @apply hover:shadow-2xl hover:border-blue-200;
+    @apply transition-all duration-300;
+  }
+  
+  .product-card-image {
+    @apply w-full h-56 object-contain p-4;
+    @apply bg-gradient-to-br from-gray-50 to-gray-100;
+  }
+  
+  .product-card-title {
+    @apply font-bold text-gray-900 text-lg;
+    @apply hover:text-blue-600 transition-colors;
+  }
+  
+  .product-card-price {
+    @apply text-2xl font-bold text-blue-600;
+  }
+  
+  .product-card-badge {
+    @apply px-3 py-1.5 rounded-full text-xs font-semibold;
+    @apply bg-gradient-to-r shadow-sm;
+  }
+}
+
 /* Mobile Optimizations */
 @layer utilities {
   .mobile-optimized {
@@ -311,6 +376,26 @@
   .mobile-full-button {
     width: 100%;
     border-radius: 8px;
+  }
+  
+  /* Mobile product card optimizations */
+  .product-card-mobile {
+    margin: 0.5rem;
+    border-radius: 12px;
+  }
+  
+  .product-card-mobile .product-title {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  
+  .product-card-mobile .product-description {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  
+  .product-card-mobile .product-price {
+    font-size: 1.25rem;
   }
 }
 

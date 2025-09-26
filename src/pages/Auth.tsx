@@ -6,34 +6,42 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { SignUpForm } from '@/components/auth/SignUpForm';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Shield } from 'lucide-react';
+import { ArrowLeft, Shield, Lock, Users, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-
-/**
- * Authentication page with login, signup, and password reset functionality
- */
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 type AuthMode = 'login' | 'signup' | 'forgot-password';
 
 const Auth: React.FC = () => {
   const [mode, setMode] = useState<AuthMode>('login');
   const [searchParams] = useSearchParams();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Check if this is admin login route
+  const isAdminRoute = location.pathname.includes('/admin') || location.pathname.includes('/theElitesSolutions/adminLogin');
+
   // Get redirect path from location state or search params
-  const redirectTo = (location.state as any)?.from || searchParams.get('redirect') || '/';
+  const redirectTo = (location.state as any)?.from || searchParams.get('redirect') || (isAdminRoute ? '/admin' : '/');
 
   // Redirect if already authenticated
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
+      // If accessing admin route, check if user has admin privileges
+      if (isAdminRoute && user?.role !== 'admin' && user?.role !== 'super_admin') {
+        toast.error('Access Denied', {
+          description: 'Admin privileges required to access this page.',
+        });
+        navigate('/', { replace: true });
+        return;
+      }
+
       navigate(redirectTo, { replace: true });
       toast.success('Welcome back!');
     }
-  }, [isAuthenticated, isLoading, navigate, redirectTo]);
+  }, [isAuthenticated, isLoading, navigate, redirectTo, isAdminRoute, user]);
 
   // Set initial mode from URL params
   useEffect(() => {
@@ -59,16 +67,26 @@ const Auth: React.FC = () => {
     }
   };
 
+  const handleLoginSuccess = () => {
+    // Navigation will be handled by the useEffect above
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="text-gray-600">Verifying credentials...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100">
+    <div className={`min-h-screen ${isAdminRoute
+      ? 'bg-gradient-to-br from-slate-100 via-white to-slate-200'
+      : 'bg-gradient-to-br from-blue-50 via-white to-indigo-100'
+    }`}>
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -81,10 +99,19 @@ const Auth: React.FC = () => {
               <ArrowLeft className="h-4 w-4" />
               <span>Back</span>
             </Button>
-            
+
             <div className="flex items-center space-x-2">
-              <Shield className="h-6 w-6 text-blue-600" />
-              <span className="font-semibold text-gray-900">LAB404</span>
+              {isAdminRoute ? (
+                <>
+                  <Lock className="h-6 w-6 text-slate-600" />
+                  <span className="font-semibold text-slate-900">LAB404 Admin</span>
+                </>
+              ) : (
+                <>
+                  <Shield className="h-6 w-6 text-blue-600" />
+                  <span className="font-semibold text-gray-900">LAB404</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -98,7 +125,27 @@ const Auth: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          {/* Admin Warning */}
+          {isAdminRoute && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6"
+            >
+              <Alert className="border-orange-200 bg-orange-50">
+                <AlertTriangle className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-800">
+                  <strong>Restricted Area:</strong> Admin credentials required. All login attempts are logged and monitored.
+                </AlertDescription>
+              </Alert>
+            </motion.div>
+          )}
+
+          <Card className={`shadow-xl border-0 backdrop-blur-sm ${
+            isAdminRoute
+              ? 'bg-white/90 border-slate-200'
+              : 'bg-white/80'
+          }`}>
             <CardContent className="p-8">
               {/* Title */}
               <div className="text-center mb-8">
@@ -107,18 +154,32 @@ const Auth: React.FC = () => {
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.2 }}
                 >
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                    <Shield className="h-8 w-8 text-blue-600" />
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${
+                    isAdminRoute
+                      ? 'bg-slate-100'
+                      : 'bg-blue-100'
+                  }`}>
+                    {isAdminRoute ? (
+                      <Lock className="h-8 w-8 text-slate-600" />
+                    ) : mode === 'signup' ? (
+                      <Users className="h-8 w-8 text-blue-600" />
+                    ) : (
+                      <Shield className="h-8 w-8 text-blue-600" />
+                    )}
                   </div>
+
                   <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    {mode === 'login' && 'Welcome Back'}
-                    {mode === 'signup' && 'Create Account'}
-                    {mode === 'forgot-password' && 'Reset Password'}
+                    {isAdminRoute ? 'Admin Access' :
+                     mode === 'login' ? 'Welcome Back' :
+                     mode === 'signup' ? 'Create Account' :
+                     'Reset Password'}
                   </h1>
+
                   <p className="text-gray-600">
-                    {mode === 'login' && 'Sign in to your LAB404 account'}
-                    {mode === 'signup' && 'Join LAB404 Electronics community'}
-                    {mode === 'forgot-password' && 'Enter your email to reset password'}
+                    {isAdminRoute ? 'Administrator portal for LAB404 Electronics' :
+                     mode === 'login' ? 'Sign in to your LAB404 account' :
+                     mode === 'signup' ? 'Join LAB404 Electronics community' :
+                     'Enter your email to reset password'}
                   </p>
                 </motion.div>
               </div>
@@ -134,43 +195,60 @@ const Auth: React.FC = () => {
                 >
                   {mode === 'login' && (
                     <div className="space-y-6">
-                      <LoginForm />
-                      
-                      <div className="space-y-4">
-                        <div className="text-center">
+                      <LoginForm
+                        onSuccess={handleLoginSuccess}
+                        showAdminMode={isAdminRoute}
+                      />
+
+                      {!isAdminRoute && (
+                        <div className="space-y-4">
+                          <div className="text-center">
+                            <Button
+                              variant="link"
+                              onClick={() => handleModeChange('forgot-password')}
+                              className="text-sm text-blue-600 hover:text-blue-700"
+                            >
+                              Forgot your password?
+                            </Button>
+                          </div>
+
+                          <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t border-gray-300" />
+                            </div>
+                            <div className="relative flex justify-center text-sm">
+                              <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
+                            </div>
+                          </div>
+
                           <Button
-                            variant="link"
-                            onClick={() => handleModeChange('forgot-password')}
-                            className="text-sm text-blue-600 hover:text-blue-700"
+                            variant="outline"
+                            onClick={() => handleModeChange('signup')}
+                            className="w-full"
                           >
-                            Forgot your password?
+                            Create Account
                           </Button>
                         </div>
-                        
-                        <div className="relative">
-                          <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-gray-300" />
-                          </div>
-                          <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
-                          </div>
+                      )}
+
+                      {isAdminRoute && (
+                        <div className="text-center pt-4">
+                          <Button
+                            variant="link"
+                            onClick={() => navigate('/')}
+                            className="text-sm text-gray-500 hover:text-gray-700"
+                          >
+                            ← Back to main site
+                          </Button>
                         </div>
-                        
-                        <Button
-                          variant="outline"
-                          onClick={() => handleModeChange('signup')}
-                          className="w-full"
-                        >
-                          Create Account
-                        </Button>
-                      </div>
+                      )}
                     </div>
                   )}
 
-                  {mode === 'signup' && (
+                  {mode === 'signup' && !isAdminRoute && (
                     <div className="space-y-6">
                       <SignUpForm />
-                      
+
                       <div className="space-y-4">
                         <div className="relative">
                           <div className="absolute inset-0 flex items-center">
@@ -180,7 +258,7 @@ const Auth: React.FC = () => {
                             <span className="px-2 bg-white text-gray-500">Already have an account?</span>
                           </div>
                         </div>
-                        
+
                         <Button
                           variant="outline"
                           onClick={() => handleModeChange('login')}
@@ -192,10 +270,10 @@ const Auth: React.FC = () => {
                     </div>
                   )}
 
-                  {mode === 'forgot-password' && (
+                  {mode === 'forgot-password' && !isAdminRoute && (
                     <div className="space-y-6">
                       <ForgotPasswordForm />
-                      
+
                       <div className="text-center">
                         <Button
                           variant="link"
@@ -213,23 +291,39 @@ const Auth: React.FC = () => {
           </Card>
 
           {/* Footer */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-center mt-8"
-          >
-            <p className="text-sm text-gray-500">
-              By signing in, you agree to our{' '}
-              <a href="/terms" className="text-blue-600 hover:underline">
-                Terms of Service
-              </a>{' '}
-              and{' '}
-              <a href="/privacy" className="text-blue-600 hover:underline">
-                Privacy Policy
-              </a>
-            </p>
-          </motion.div>
+          {!isAdminRoute && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-center mt-8"
+            >
+              <p className="text-sm text-gray-500">
+                By signing in, you agree to our{' '}
+                <a href="/terms" className="text-blue-600 hover:underline">
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a href="/privacy" className="text-blue-600 hover:underline">
+                  Privacy Policy
+                </a>
+              </p>
+            </motion.div>
+          )}
+
+          {/* Admin Footer */}
+          {isAdminRoute && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-center mt-8"
+            >
+              <p className="text-xs text-gray-500">
+                LAB404 Admin Portal • Secure Access Required
+              </p>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </div>

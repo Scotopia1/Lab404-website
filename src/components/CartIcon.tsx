@@ -16,7 +16,7 @@ export const CartIcon = ({ onClick, className = '' }: CartIconProps) => {
       variant="ghost"
       size="sm"
       onClick={onClick}
-      className={`relative h-10 w-10 p-0 hover:bg-secondary/80 ${className}`}
+      className={`relative h-10 w-10 p-0 hover:bg-blue-50 text-gray-600 hover:text-blue-600 transition-colors ${className}`}
       aria-label={`Shopping cart with ${itemCount} items`}
     >
       <ShoppingCart className="h-5 w-5" />

@@ -4,7 +4,6 @@ import './index.css';
 import { validateEnv } from './lib/env';
 import { setupGlobalErrorHandlers } from './lib/errorHandler';
 import './lib/test-database'; // Import to run database tests
-import './lib/createAdminUser'; // Make admin utilities available in browser
 
 // Validate environment variables on app startup
 validateEnv();

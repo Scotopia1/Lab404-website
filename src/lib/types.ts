@@ -13,7 +13,7 @@ export interface Product {
   specifications: Record<string, any>;
   features?: string[];
   tags: string[];
-  inStock: boolean;
+  inStock: boolean; // Always true - no stock limitations
   stockQuantity?: number;
   lowStockThreshold?: number;
   trackInventory?: boolean;
@@ -66,6 +66,7 @@ export interface AlibabaProduct {
     cost: string;
   };
   certifications: string[];
+  tags: string[]; // Added missing tags property
 }
 
 // New streamlined Alibaba content interface (content-only)

@@ -87,7 +87,7 @@ const ContactFormSection = () => {
                       type="tel"
                       value={formData.phoneNumber}
                       onChange={handleInputChange}
-                      placeholder="+961 XX XXX XXX"
+                      placeholder="+961XXXXXXXX"
                       className="w-full"
                       required
                     />

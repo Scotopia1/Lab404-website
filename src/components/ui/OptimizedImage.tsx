@@ -28,14 +28,12 @@ const ImageSkeleton: React.FC<{ width?: number; height?: number; className?: str
 
   return (
     <div
-      className={`bg-gray-200 animate-pulse rounded ${className}`}
+      className={`bg-gray-200 animate-pulse rounded w-full h-full flex items-center justify-center ${className}`}
       style={style}
       role="presentation"
       aria-hidden="true"
     >
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-400 text-sm">Loading...</div>
-      </div>
+      <div className="text-gray-400 text-sm">Loading...</div>
     </div>
   );
 };
@@ -53,7 +51,7 @@ const ImageError: React.FC<{ width?: number; height?: number; className?: string
 
   return (
     <div
-      className={`bg-gray-100 border-2 border-dashed border-gray-300 rounded flex items-center justify-center ${className}`}
+      className={`bg-gray-100 border-2 border-dashed border-gray-300 rounded flex items-center justify-center w-full h-full ${className}`}
       style={style}
       role="img"
       aria-label={`Failed to load image: ${alt}`}
@@ -102,6 +100,15 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const { prefersReducedMotion } = useReducedMotion();
+
+  // Update currentSrc when src prop changes
+  useEffect(() => {
+    if (priority) {
+      setCurrentSrc(src);
+      setLoading(true);
+      setError(false);
+    }
+  }, [src, priority]);
 
   // Intersection Observer for lazy loading
   useEffect(() => {

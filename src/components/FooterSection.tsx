@@ -116,7 +116,7 @@ const FooterSection = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Phone className="h-4 w-4 text-blue-400" />
-                <span className="text-gray-300 text-sm">{import.meta.env.VITE_COMPANY_PHONE || '+961 XX XXX XXX'}</span>
+                <span className="text-gray-300 text-sm">{import.meta.env.VITE_COMPANY_PHONE || '+961XXXXXXXX'}</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-4 w-4 text-blue-400" />

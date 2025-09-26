@@ -29,7 +29,7 @@ const AllInOneHubSection = () => {
             viewport={{ once: true }}
             whileHover={{ y: -5, scale: 1.02 }}
           >
-            <Card className="text-center p-6 hover:shadow-xl transition-all duration-300 h-full">
+            <Card className="text-center p-6 hover:shadow-xl transition-all duration-300 h-full bg-white border border-gray-200">
               <CardContent className="space-y-4">
                 <motion.div 
                   className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto"
@@ -50,7 +50,7 @@ const AllInOneHubSection = () => {
             viewport={{ once: true }}
             whileHover={{ y: -5, scale: 1.02 }}
           >
-            <Card className="text-center p-6 hover:shadow-xl transition-all duration-300 h-full">
+            <Card className="text-center p-6 hover:shadow-xl transition-all duration-300 h-full bg-white border border-gray-200">
               <CardContent className="space-y-4">
                 <motion.div 
                   className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto"
@@ -71,7 +71,7 @@ const AllInOneHubSection = () => {
             viewport={{ once: true }}
             whileHover={{ y: -5, scale: 1.02 }}
           >
-            <Card className="text-center p-6 hover:shadow-xl transition-all duration-300 h-full">
+            <Card className="text-center p-6 hover:shadow-xl transition-all duration-300 h-full bg-white border border-gray-200">
               <CardContent className="space-y-4">
                 <motion.div 
                   className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto"
@@ -92,7 +92,7 @@ const AllInOneHubSection = () => {
             viewport={{ once: true }}
             whileHover={{ y: -5, scale: 1.02 }}
           >
-            <Card className="text-center p-6 hover:shadow-xl transition-all duration-300 h-full">
+            <Card className="text-center p-6 hover:shadow-xl transition-all duration-300 h-full bg-white border border-gray-200">
               <CardContent className="space-y-4">
                 <motion.div 
                   className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto"

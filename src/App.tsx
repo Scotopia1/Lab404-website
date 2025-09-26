@@ -2,9 +2,10 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AppErrorBoundary, PageErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { RequireAdmin } from '@/components/ProtectedRoute';
+import { WebSocketProvider } from '@/contexts/WebSocketContext';
 import { initializeStores, useSyncManager, useRealtimeCartSync } from '@/stores';
 import { Suspense, useEffect, lazy } from 'react';
 import SkipLinks from '@/components/SkipLinks';
@@ -20,17 +21,29 @@ const Index = lazy(() =>
 const Store = lazy(() => 
   import('./pages/Store').then(module => ({ default: module.default }))
 );
-const ProductDetail = lazy(() => 
+const ProductDetail = lazy(() =>
   import('./pages/ProductDetail').then(module => ({ default: module.default }))
 );
-const Admin = lazy(() => 
+const Admin = lazy(() =>
   import('./pages/Admin').then(module => ({ default: module.default }))
 );
-const Auth = lazy(() => 
+const Auth = lazy(() =>
   import('./pages/Auth').then(module => ({ default: module.default }))
 );
-const NotFound = lazy(() => 
+const NotFound = lazy(() =>
   import('./pages/NotFound').then(module => ({ default: module.default }))
+);
+const AlibabaImport = lazy(() =>
+  import('./pages/AlibabaImport').then(module => ({ default: module.default }))
+);
+const Blog = lazy(() =>
+  import('./pages/Blog').then(module => ({ default: module.default }))
+);
+const BlogPost = lazy(() =>
+  import('./pages/BlogPost').then(module => ({ default: module.default }))
+);
+const Checkout = lazy(() =>
+  import('./pages/Checkout').then(module => ({ default: module.default }))
 );
 
 // Preload commonly accessed routes
@@ -116,17 +129,24 @@ const StoreProvider = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <AppErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <StoreProvider>
-          <TooltipProvider>
-            <Toaster />
-            <PWAUpdatePrompt />
-            <BrowserRouter>
-              <SkipLinks />
-              <Suspense fallback={<PageLoadingSkeleton />}>
-              <PreloadManager />
-              <Routes>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <WebSocketProvider>
+            <StoreProvider>
+              <TooltipProvider>
+                <Toaster />
+                <PWAUpdatePrompt />
+              <BrowserRouter
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true
+                }}
+              >
+                <SkipLinks />
+                <Suspense fallback={<PageLoadingSkeleton />}>
+                <PreloadManager />
+                <Routes>
                 <Route 
                   path="/" 
                   element={
@@ -143,31 +163,53 @@ const App = () => (
                     </PageErrorBoundary>
                   } 
                 />
-                <Route 
-                  path="/product/:id" 
+                <Route
+                  path="/product/:id"
                   element={
                     <PageErrorBoundary>
                       <ProductDetail />
                     </PageErrorBoundary>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/theElitesSolutions/adminLogin" 
+                <Route
+                  path="/checkout"
+                  element={
+                    <PageErrorBoundary>
+                      <Checkout />
+                    </PageErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/theElitesSolutions/adminLogin"
                   element={
                     <PageErrorBoundary>
                       <Auth />
                     </PageErrorBoundary>
-                  } 
+                  }
                 />
-                <Route 
-                  path="/admin/*" 
+                <Route
+                  path="/blog"
                   element={
                     <PageErrorBoundary>
-                      <RequireAdmin>
-                        <Admin />
-                      </RequireAdmin>
+                      <Blog />
                     </PageErrorBoundary>
-                  } 
+                  }
+                />
+                <Route
+                  path="/blog/:slug"
+                  element={
+                    <PageErrorBoundary>
+                      <BlogPost />
+                    </PageErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/admin/*"
+                  element={
+                    <PageErrorBoundary>
+                      <Admin />
+                    </PageErrorBoundary>
+                  }
                 />
                 <Route 
                   path="*" 
@@ -179,11 +221,13 @@ const App = () => (
                 />
               </Routes>
             </Suspense>
-            </BrowserRouter>
-          </TooltipProvider>
-        </StoreProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+              </BrowserRouter>
+              </TooltipProvider>
+            </StoreProvider>
+          </WebSocketProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   </AppErrorBoundary>
 );
 

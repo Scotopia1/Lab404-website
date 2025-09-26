@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, Minus, Plus, ShoppingBag, Trash2, CreditCard } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -19,9 +21,10 @@ interface CartDrawerProps {
 }
 
 export const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
+  const navigate = useNavigate();
   const { items } = useCartStore();
   const cartSummary = useCartSummary();
-  const { updateQuantity, removeItem } = useCartActions();
+  const { updateQuantity, removeItem, clearCart } = useCartActions();
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
 
   const handleQuantityUpdate = async (itemId: string, newQuantity: number) => {
@@ -34,9 +37,9 @@ export const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
 
   const handleWhatsAppOrder = () => {
     setIsProcessingOrder(true);
-    
+
     // Generate WhatsApp message
-    const itemsList = items.map(item => 
+    const itemsList = items.map(item =>
       `📱 *${item.name}*\n` +
       `   Quantity: ${item.quantity}\n` +
       `   Unit Price: $${item.price.toFixed(2)}\n` +
@@ -53,10 +56,15 @@ export const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
 
     const phoneNumber = import.meta.env.VITE_WHATSAPP_PHONE_NUMBER || '+96176666341';
     const whatsappUrl = `https://wa.me/${phoneNumber.replace('+', '')}?text=${encodeURIComponent(message)}`;
-    
+
     window.open(whatsappUrl, '_blank');
     setIsProcessingOrder(false);
     onClose();
+  };
+
+  const handleGoToCheckout = () => {
+    onClose();
+    navigate('/checkout');
   };
 
   if (items.length === 0) {
@@ -205,8 +213,18 @@ export const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
           {/* Checkout Actions */}
           <div className="space-y-2">
             <Button
+              onClick={handleGoToCheckout}
+              disabled={items.some(item => !item.inStock)}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              Checkout (Cash on Delivery)
+            </Button>
+
+            <Button
               onClick={handleWhatsAppOrder}
               disabled={isProcessingOrder || items.some(item => !item.inStock)}
+              variant="outline"
               className="w-full whatsapp-button"
             >
               {isProcessingOrder ? (
@@ -215,9 +233,9 @@ export const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
                 'Order via WhatsApp'
               )}
             </Button>
-            
+
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={onClose}
               className="w-full"
             >

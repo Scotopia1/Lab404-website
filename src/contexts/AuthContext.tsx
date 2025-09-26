@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useReducer, useCallback } from 'react';
-import { authService } from '@/lib/auth';
+import { backendAuthService } from '@/lib/backendAuth';
 import type { User, AuthState } from '@/lib/types';
 import { errorHandler } from '@/lib/errorHandler';
 
@@ -102,11 +102,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
 
-        // Get current user from auth service
-        const currentUser = authService.getCurrentUser();
-        
+        // Get current user from backend auth service
+        const currentUser = backendAuthService.getUser();
+
         if (isMounted) {
           dispatch({ type: 'SET_USER', payload: currentUser });
+        }
+
+        // Try to get updated user data from server if we have a token
+        if (currentUser) {
+          await backendAuthService.getCurrentUser();
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -119,7 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
 
     // Set up auth state listener
-    const unsubscribe = authService.addAuthStateListener((user) => {
+    const unsubscribe = backendAuthService.onAuthStateChange((user) => {
       if (isMounted) {
         dispatch({ type: 'SET_USER', payload: user });
       }
@@ -132,12 +137,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   // Sign in function
-  const signIn = useCallback(async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string, rememberMe?: boolean) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
 
-      const { data, error } = await authService.signIn({ email, password });
+      const { data, error } = await backendAuthService.signIn({ email, password });
 
       if (error) {
         dispatch({ type: 'SET_ERROR', payload: error });
@@ -167,7 +172,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
 
-      const { data, error } = await authService.signUp({ email, password, name });
+      // Admin panel doesn't support user registration
+      const error = 'User registration is not available in the admin panel';
+      const data = null;
 
       if (error) {
         dispatch({ type: 'SET_ERROR', payload: error });
@@ -195,13 +202,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      
-      const { error } = await authService.signOut();
-      
-      if (error) {
-        dispatch({ type: 'SET_ERROR', payload: error });
-        return;
-      }
+
+      await backendAuthService.signOut();
 
       dispatch({ type: 'SIGN_OUT' });
     } catch (error) {
@@ -217,7 +219,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
 
-      const { error } = await authService.resetPassword(email);
+      // Admin panel doesn't support password reset
+      const error = 'Password reset is not available in the admin panel';
 
       dispatch({ type: 'SET_LOADING', payload: false });
 
@@ -243,10 +246,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
 
-      const { data, error } = await authService.updateProfile({
-        name: updates.name,
-        avatar_url: updates.avatar,
-      });
+      // Admin panel doesn't support profile updates yet
+      const error = 'Profile updates are not available in the admin panel';
+      const data = null;
 
       if (error) {
         dispatch({ type: 'SET_ERROR', payload: error });
@@ -272,19 +274,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Utility functions
   const isAdmin = useCallback(() => {
-    return authService.isAdmin();
+    return backendAuthService.isAdmin();
   }, [state.user]);
 
   const hasRole = useCallback((role: 'admin' | 'user') => {
-    return authService.hasRole(role);
+    // For backend auth, we only have admin users, so check if user is admin
+    return role === 'admin' ? backendAuthService.isAdmin() : false;
   }, [state.user]);
 
   const refreshAuth = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
-      
-      // Force refresh the session
-      const currentUser = authService.getCurrentUser();
+
+      await backendAuthService.refreshAuth();
+
+      // Get updated user data after refresh
+      const currentUser = backendAuthService.getUser();
       dispatch({ type: 'SET_USER', payload: currentUser });
     } catch (error) {
       console.error('Refresh auth error:', error);
@@ -406,4 +411,5 @@ export const withAuth = <P extends object>(
   return AuthenticatedComponent;
 };
 
-export default AuthContext;
+export { AuthContext };
+export default AuthProvider;

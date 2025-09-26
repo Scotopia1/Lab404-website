@@ -1,12 +1,4 @@
-import { 
-  User, 
-  Session, 
-  AuthError, 
-  AuthChangeEvent,
-  SignInWithPasswordCredentials,
-  SignUpWithPasswordCredentials
-} from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { apiClient } from '@/api/client';
 import { adminConfig } from './env';
 import { errorHandler } from './errorHandler';
 import type { User as AppUser, AuthState } from './types';
@@ -45,7 +37,6 @@ export interface UserProfile {
 export class AuthService {
   private static instance: AuthService;
   private currentUser: AppUser | null = null;
-  private currentSession: Session | null = null;
   private authStateListeners: Set<(user: AppUser | null) => void> = new Set();
 
   static getInstance(): AuthService {
@@ -315,7 +306,33 @@ export class AuthService {
    * Get current user
    */
   getCurrentUser(): AppUser | null {
+    // Check for development bypass first
+    const devUser = this.checkDevBypass();
+    if (devUser) {
+      return devUser;
+    }
+
     return this.currentUser;
+  }
+
+  /**
+   * Check for development authentication bypass
+   */
+  private checkDevBypass(): AppUser | null {
+    try {
+      const devUser = localStorage.getItem('lab404_dev_user');
+      const devSession = localStorage.getItem('lab404_dev_session');
+
+      if (devUser && devSession) {
+        const user = JSON.parse(devUser);
+        console.log('🔓 Using development bypass authentication');
+        return user;
+      }
+    } catch (error) {
+      console.error('Error checking dev bypass:', error);
+    }
+
+    return null;
   }
 
   /**
@@ -329,6 +346,12 @@ export class AuthService {
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
+    // Check for development bypass first
+    const devUser = this.checkDevBypass();
+    if (devUser) {
+      return true;
+    }
+
     return this.currentUser !== null && this.currentSession !== null;
   }
 
@@ -336,6 +359,12 @@ export class AuthService {
    * Check if current user is admin
    */
   isAdmin(): boolean {
+    // Check for development bypass first
+    const devUser = this.checkDevBypass();
+    if (devUser) {
+      return devUser.role === 'admin';
+    }
+
     return this.currentUser?.role === 'admin';
   }
 
@@ -343,6 +372,12 @@ export class AuthService {
    * Check if current user has specific role
    */
   hasRole(role: 'admin' | 'user'): boolean {
+    // Check for development bypass first
+    const devUser = this.checkDevBypass();
+    if (devUser) {
+      return devUser.role === role;
+    }
+
     return this.currentUser?.role === role;
   }
 

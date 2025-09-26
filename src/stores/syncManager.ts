@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCartStore } from './cartStore';
-import { db } from '../lib/supabase';
+import { apiClient } from '../api/client';
 import { realtimeManager, subscribeToUserCart } from '../lib/realtime';
 
 // =============================================
@@ -81,14 +81,11 @@ class StateSyncManager {
       const localItems = cartStore.items;
       
       // Load remote cart items
-      const { data: remoteItems, error } = await db.cart.getItems(userId);
-      
-      if (error) {
-        throw new Error(`Failed to load remote cart: ${error.message}`);
-      }
+      const remoteCartData = await apiClient.getCart();
+      const remoteItems = remoteCartData?.items || [];
 
       // Sync logic based on conflict resolution strategy
-      const syncedItems = await this.resolveCartConflicts(localItems, remoteItems || []);
+      const syncedItems = await this.resolveCartConflicts(localItems, remoteItems);
       
       // Update local cart with synced items
       if (JSON.stringify(localItems) !== JSON.stringify(syncedItems)) {
