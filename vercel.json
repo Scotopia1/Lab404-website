@@ -3,11 +3,7 @@
   "installCommand": "pnpm install",
   "rewrites": [
     {
-      "source": "/api/theelitessolutions/(.*)",
-      "destination": "http://16.170.225.251/api/$1"
-    },
-    {
-      "source": "/((?!api/).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
