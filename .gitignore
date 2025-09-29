@@ -90,6 +90,7 @@ public
 # Temporary folders
 tmp/
 temp/
+scripts
 
 # Runtime data
 pids
