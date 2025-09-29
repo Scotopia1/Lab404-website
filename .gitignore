@@ -123,8 +123,7 @@ out/
 # Turbo
 .turbo
 
-# Vercel
-.vercel
+
 
 # Local environment files
 .env*.local

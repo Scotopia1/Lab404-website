@@ -1319,7 +1319,6 @@ type(scope): description
 - [Implementation Plan](./IMPLEMENTATION_PLAN.md)
 - [Code Recommendations](./CODE_RECOMMENDATIONS.md)
 - [Project Repository](https://github.com/lab404/ecommerce-platform)
-- [Live Demo](https://lab404-demo.vercel.app)
 
 ---
 
