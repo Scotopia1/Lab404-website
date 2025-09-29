@@ -1,17 +1,14 @@
 {
   "buildCommand": "pnpm build",
   "installCommand": "pnpm install",
-  "routes": [
-    {
-      "src": "/[^.]+",
-      "dest": "/",
-      "status": 200
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/theelitessolutions/(.*)",
       "destination": "http://16.170.225.251/api/$1"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }
