@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/theelitessolutions/:path*",
-      "destination": "http://16.170.225.251/:path*"
+      "destination": "http://16.170.225.251/api/:path*"
     }
   ]
 }
