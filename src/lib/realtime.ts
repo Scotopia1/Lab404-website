@@ -35,15 +35,20 @@ class RealtimeManager {
   private isConnected = false;
 
   constructor() {
-    this.setupConnectionHandlers();
+    // DISABLED: Supabase realtime connection - Using Socket.IO instead
+    // this.setupConnectionHandlers();
+    this.isConnected = false; // Disabled
+    console.warn('⚠️ Supabase Realtime Manager is DISABLED - Using Socket.IO via WebSocketContext instead');
+    console.warn('⚠️ This legacy code should be removed in a future update');
   }
 
   private setupConnectionHandlers() {
+    // DISABLED: Legacy Supabase v2 connection handlers
     // Modern Supabase v2 doesn't expose direct connection handlers
     // Connection status is managed internally by the client
     // We'll track connection status through subscription success/failure
-    this.isConnected = true; // Assume connected initially
-    console.log('✅ Realtime manager initialized');
+    // this.isConnected = true; // Assume connected initially
+    console.log('⚠️ Legacy Realtime manager - DISABLED');
   }
 
   /**

@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCartStore } from './cartStore';
 import { apiClient } from '../api/client';
-import { realtimeManager, subscribeToUserCart } from '../lib/realtime';
+// DISABLED: Legacy Supabase realtime - Using Socket.IO instead via WebSocketContext
+// import { realtimeManager, subscribeToUserCart } from '../lib/realtime';
 
 // =============================================
 // TYPES
@@ -283,6 +284,9 @@ export const useSyncManager = () => {
 // REAL-TIME SYNC HOOKS
 // =============================================
 
+// DISABLED: Legacy Supabase realtime hook - Using Socket.IO instead via WebSocketContext
+// This hook was causing 1000+ error logs trying to connect to non-existent Supabase project
+/*
 export const useRealtimeCartSync = () => {
   const { user } = useAuth();
   const cartStore = useCartStore();
@@ -295,17 +299,17 @@ export const useRealtimeCartSync = () => {
         console.log('Real-time cart item added:', item);
         // Handle real-time cart updates
       },
-      
+
       onItemUpdated: (item) => {
         console.log('Real-time cart item updated:', item);
         // Handle real-time cart updates
       },
-      
+
       onItemRemoved: (itemId) => {
         console.log('Real-time cart item removed:', itemId);
         // Handle real-time cart updates
       },
-      
+
       onError: (error) => {
         console.error('Real-time cart sync error:', error);
       },
@@ -315,6 +319,13 @@ export const useRealtimeCartSync = () => {
       subscription.unsubscribe();
     };
   }, [user?.id]);
+};
+*/
+
+// Placeholder hook to prevent breaking imports
+export const useRealtimeCartSync = () => {
+  // No-op: Real-time cart sync now handled by Socket.IO in WebSocketContext
+  console.log('⚠️ useRealtimeCartSync is deprecated - using Socket.IO instead');
 };
 
 // =============================================
