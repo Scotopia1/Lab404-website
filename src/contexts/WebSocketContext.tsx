@@ -79,7 +79,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     console.log('🔌 Initializing WebSocket connection for admin user:', user.email);
 
-    const newSocket = io(`${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:3000'}/admin`, {
+    const newSocket = io(`${import.meta.env.VITE_WEBSOCKET_URL || import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || 'http://localhost:3000'}/admin`, {
       auth: {
         token: token
       },
