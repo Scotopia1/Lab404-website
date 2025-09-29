@@ -89,13 +89,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       auth: {
         token: token
       },
-      transports: ['polling', 'websocket'], // Try polling first, then websocket
+      transports: ['polling'], // Only use polling to avoid WebSocket upgrade issues
       timeout: 10000,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       forceNew: true,
-      upgrade: true,
+      upgrade: false, // Disable WebSocket upgrade to prevent mixed content issues
     });
 
     // Connection event handlers
