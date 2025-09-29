@@ -199,10 +199,28 @@ export const Categories: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Sanitize data for backend API - remove slug and convert empty strings to undefined
+    const sanitizedData: any = {
+      name: formData.name,
+      description: formData.description || undefined,
+      sort_order: formData.sort_order,
+      is_active: formData.is_active,
+    };
+
+    // Only add image_url if it's not empty (backend validates URL format)
+    if (formData.image_url && formData.image_url.trim()) {
+      sanitizedData.image_url = formData.image_url.trim();
+    }
+
+    // Only add parent_id if it's not empty (backend validates UUID format)
+    if (formData.parent_id && formData.parent_id.trim()) {
+      sanitizedData.parent_id = formData.parent_id.trim();
+    }
+
     if (editingCategory) {
-      updateCategoryMutation.mutate({ id: editingCategory.id, data: formData });
+      updateCategoryMutation.mutate({ id: editingCategory.id, data: sanitizedData });
     } else {
-      createCategoryMutation.mutate(formData);
+      createCategoryMutation.mutate(sanitizedData);
     }
   };
 
