@@ -70,6 +70,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       return;
     }
 
+    // Check if WebSocket is disabled in production
+    if (import.meta.env.VITE_DISABLE_WEBSOCKET === 'true') {
+      console.log('🚫 WebSocket disabled in production due to mixed content policy');
+      return;
+    }
+
     // Get token directly from TokenManager
     const token = TokenManager.getAccessToken();
     if (!token) {
@@ -83,11 +89,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       auth: {
         token: token
       },
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'], // Try polling first, then websocket
       timeout: 10000,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      forceNew: true,
+      upgrade: true,
     });
 
     // Connection event handlers
