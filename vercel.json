@@ -1,8 +1,15 @@
 {
+  "routes": [
+    {
+      "src": "/[^.]+",
+      "dest": "/",
+      "status": 200
+    }
+  ],
   "rewrites": [
     {
-      "source": "/api/theelitessolutions/:path*",
-      "destination": "http://16.170.225.251/api/:path*"
+      "source": "/api/theelitessolutions/*",
+      "destination": "http://16.170.225.251/api/*"
     }
   ]
 }
