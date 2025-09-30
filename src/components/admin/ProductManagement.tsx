@@ -374,17 +374,43 @@ export const ProductManagement: React.FC = () => {
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
-    // For now, we'll just store the file names as a simulation
-    // In a real implementation, you'd upload to a service like S3 or Cloudinary
-    const newImages = Array.from(files).map(file => URL.createObjectURL(file));
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, ...newImages]
-    }));
+    try {
+      // Show loading toast
+      const uploadingToast = toast.loading(`Uploading ${files.length} image${files.length > 1 ? 's' : ''}...`);
+
+      // Upload each file to ImageKit
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const formData = new FormData();
+        formData.append('image', file);
+
+        // Add product ID if editing existing product
+        if (editingProduct?.id) {
+          formData.append('productId', editingProduct.id);
+        }
+
+        const response = await apiClient.uploadImage(formData);
+        return response.url; // Return the ImageKit URL
+      });
+
+      const uploadedImageUrls = await Promise.all(uploadPromises);
+
+      // Update form data with ImageKit URLs
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...uploadedImageUrls]
+      }));
+
+      // Dismiss loading toast and show success
+      toast.dismiss(uploadingToast);
+      toast.success(`Successfully uploaded ${files.length} image${files.length > 1 ? 's' : ''}!`);
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error('Failed to upload images. Please try again.');
+    }
   };
 
   const removeImage = (index: number) => {

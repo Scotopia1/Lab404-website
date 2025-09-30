@@ -1086,6 +1086,34 @@ class ApiClient {
   }> {
     return this.post(`/reviews/reviews/${reviewId}/helpful`, { is_helpful: isHelpful });
   }
+
+  // Image upload methods
+  async uploadImage(formData: FormData): Promise<{ url: string; fileId: string; originalName: string }> {
+    const response = await fetch(`${API_BASE_URL}/upload/images`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`
+      },
+      body: formData // Don't set Content-Type header - browser will set it with boundary
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to upload image' }));
+      throw new Error(errorData.message || 'Failed to upload image');
+    }
+
+    const result: ApiResponse<{ url: string; fileId: string; originalName: string }> = await response.json();
+
+    if (!result.success || !result.data) {
+      throw new Error(result.message || 'Failed to upload image');
+    }
+
+    return result.data;
+  }
+
+  async deleteImage(fileId: string): Promise<{ fileId: string }> {
+    return this.delete(`/upload/images/${fileId}`);
+  }
 }
 
 // Export singleton instance
