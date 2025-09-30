@@ -121,12 +121,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     setShowPassword(!showPassword);
   };
 
-  const fillDemoCredentials = () => {
-    setValue('email', 'admin@lab404.com');
-    setValue('password', 'please_change_this_password');
-    clearErrors();
-  };
-
   return (
     <motion.form
       initial={{ opacity: 0 }}
@@ -274,39 +268,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           </>
         )}
       </Button>
-
-      {/* Demo Account Helper - Only show for admin mode */}
-      {showAdminMode && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="p-4 bg-blue-50 rounded-lg border border-blue-200"
-        >
-          <h4 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
-            <Shield className="h-4 w-4 mr-2" />
-            Demo Admin Account
-          </h4>
-          <p className="text-xs text-blue-600 mb-3">
-            For testing purposes only. Change credentials in production.
-          </p>
-          <div className="space-y-1 text-xs font-mono bg-blue-100 p-2 rounded border">
-            <p><strong>Email:</strong> admin@lab404.com</p>
-            <p><strong>Password:</strong> please_change_this_password</p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-3 h-8 text-xs w-full"
-            onClick={fillDemoCredentials}
-            disabled={isLoading}
-          >
-            <Shield className="h-3 w-3 mr-2" />
-            Use Demo Credentials
-          </Button>
-        </motion.div>
-      )}
     </motion.form>
   );
 };

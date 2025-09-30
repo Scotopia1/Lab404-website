@@ -13,10 +13,6 @@ interface EnvConfig {
   whatsappPhoneNumber: string;
   whatsappBusinessName: string;
   
-  // Admin
-  adminEmail: string;
-  adminPassword: string;
-  
   // Company Info
   companyName: string;
   companyAddress: string;
@@ -70,9 +66,7 @@ export const env: EnvConfig = {
   whatsappPhoneNumber: getEnvVar('VITE_WHATSAPP_PHONE_NUMBER', '+96176666341'),
   whatsappBusinessName: getEnvVar('VITE_WHATSAPP_BUSINESS_NAME', 'LAB404 Electronics'),
   
-  // Admin Configuration
-  adminEmail: getEnvVar('VITE_ADMIN_EMAIL', 'admin@lab404.com'),
-  adminPassword: getEnvVar('VITE_ADMIN_PASSWORD', 'your-very-secure-admin-password'),
+  // Admin Configuration (removed - credentials managed in database)
   
   // Company Information
   companyName: getEnvVar('VITE_COMPANY_NAME', 'LAB404 Electronics'),
@@ -117,16 +111,6 @@ export const validateEnv = (): void => {
     console.warn('See .env.example for a template');
   }
 
-  // Security warnings
-  if (env.adminPassword === 'admin123' || env.adminPassword === 'please_change_this_password') {
-    if (isProd()) {
-      console.error('🚨 SECURITY WARNING: Default admin password detected in production!');
-      console.error('Please change the VITE_ADMIN_PASSWORD environment variable.');
-    } else {
-      console.warn('⚠️  Using default admin password. Change this before deploying to production.');
-    }
-  }
-
   // Validate Supabase URL format
   if (env.supabaseUrl && !env.supabaseUrl.includes('.supabase.co')) {
     console.warn('⚠️  Supabase URL format may be incorrect. Expected format: https://project.supabase.co');
@@ -156,11 +140,6 @@ export const supabaseConfig = {
 export const whatsappConfig = {
   phoneNumber: env.whatsappPhoneNumber,
   businessName: env.whatsappBusinessName,
-};
-
-export const adminConfig = {
-  email: env.adminEmail,
-  password: env.adminPassword,
 };
 
 export const companyConfig = {
