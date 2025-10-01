@@ -48,6 +48,7 @@ import {
   Layers,
   Link,
   Globe,
+  ListChecks,
 } from 'lucide-react';
 import { apiClient } from '@/api/client';
 import { backendAuthService } from '@/lib/backendAuth';
@@ -153,8 +154,8 @@ export const ProductManagement: React.FC = () => {
     category_id: '',
     tags: '',
     images: [] as string[],
-    specifications: {} as Record<string, string>,
-    features: [] as string[],
+    specifications: [{ key: '', value: '' }] as Array<{ key: string; value: string }>,
+    features: [''] as string[],
     in_stock: true,
     stock_quantity: '',
     low_stock_threshold: '',
@@ -341,8 +342,8 @@ export const ProductManagement: React.FC = () => {
       category_id: '',
       tags: '',
       images: [],
-      specifications: {},
-      features: [],
+      specifications: [{ key: '', value: '' }],
+      features: [''],
       in_stock: true,
       stock_quantity: '',
       low_stock_threshold: '',
@@ -454,6 +455,54 @@ export const ProductManagement: React.FC = () => {
     }));
   };
 
+  // Specifications handlers
+  const addSpecification = () => {
+    setFormData(prev => ({
+      ...prev,
+      specifications: [...prev.specifications, { key: '', value: '' }]
+    }));
+  };
+
+  const removeSpecification = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      specifications: prev.specifications.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateSpecification = (index: number, field: 'key' | 'value', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      specifications: prev.specifications.map((spec, i) =>
+        i === index ? { ...spec, [field]: value } : spec
+      )
+    }));
+  };
+
+  // Features handlers
+  const addFeature = () => {
+    setFormData(prev => ({
+      ...prev,
+      features: [...prev.features, '']
+    }));
+  };
+
+  const removeFeature = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      features: prev.features.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateFeature = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      features: prev.features.map((feature, i) =>
+        i === index ? value : feature
+      )
+    }));
+  };
+
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
@@ -527,8 +576,12 @@ export const ProductManagement: React.FC = () => {
             : 5,
         track_inventory: formData.unlimited_stock ? false : formData.track_inventory,
         tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
-        features: formData.features.filter(Boolean),
-        specifications: formData.specifications,
+        features: formData.features.filter(f => f.trim()),
+        specifications: Object.fromEntries(
+          formData.specifications
+            .filter(s => s.key.trim() && s.value.trim())
+            .map(s => [s.key, s.value])
+        ),
         // Ensure images is always an array
         images: Array.isArray(formData.images) ? formData.images : [],
       };
@@ -574,8 +627,12 @@ export const ProductManagement: React.FC = () => {
       category: product.category || '', // Include category name
       tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
       images: Array.isArray(product.images) ? product.images : [], // Ensure images is an array
-      specifications: product.specifications || {},
-      features: product.features || [],
+      specifications: product.specifications && typeof product.specifications === 'object'
+        ? Object.entries(product.specifications).map(([key, value]) => ({ key, value: String(value) }))
+        : [{ key: '', value: '' }],
+      features: Array.isArray(product.features) && product.features.length > 0
+        ? product.features
+        : [''],
       in_stock: product.in_stock,
       stock_quantity: product.stock_quantity.toString(),
       low_stock_threshold: product.low_stock_threshold.toString(),
@@ -1443,6 +1500,96 @@ export const ProductManagement: React.FC = () => {
               </div>
             </div>
 
+            {/* Technical Specifications */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <Layers className="h-5 w-5 text-teal-600" />
+                <h3 className="font-semibold">Technical Specifications</h3>
+              </div>
+
+              <div className="space-y-3">
+                {formData.specifications.map((spec, index) => (
+                  <div key={index} className="grid grid-cols-2 gap-3">
+                    <Input
+                      value={spec.key}
+                      onChange={(e) => updateSpecification(index, 'key', e.target.value)}
+                      placeholder="Key (e.g., Voltage, Current)"
+                      className="text-sm"
+                    />
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        value={spec.value}
+                        onChange={(e) => updateSpecification(index, 'value', e.target.value)}
+                        placeholder="Value (e.g., 3.3V, 500mA)"
+                        className="flex-1 text-sm"
+                      />
+                      {formData.specifications.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSpecification(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addSpecification}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Specification
+                </Button>
+              </div>
+            </div>
+
+            {/* Product Features */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <ListChecks className="h-5 w-5 text-green-600" />
+                <h3 className="font-semibold">Product Features</h3>
+              </div>
+
+              <div className="space-y-3">
+                {formData.features.map((feature, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <Input
+                      value={feature}
+                      onChange={(e) => updateFeature(index, e.target.value)}
+                      placeholder="e.g., Built-in WiFi, USB-C charging, Water resistant"
+                      className="flex-1 text-sm"
+                    />
+                    {formData.features.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFeature(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addFeature}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Feature
+                </Button>
+              </div>
+            </div>
+
             {/* Images */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2 mb-4">
@@ -1829,6 +1976,96 @@ export const ProductManagement: React.FC = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Technical Specifications */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <Layers className="h-5 w-5 text-teal-600" />
+                <h3 className="font-semibold">Technical Specifications</h3>
+              </div>
+
+              <div className="space-y-3">
+                {formData.specifications.map((spec, index) => (
+                  <div key={index} className="grid grid-cols-2 gap-3">
+                    <Input
+                      value={spec.key}
+                      onChange={(e) => updateSpecification(index, 'key', e.target.value)}
+                      placeholder="Key (e.g., Voltage, Current)"
+                      className="text-sm"
+                    />
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        value={spec.value}
+                        onChange={(e) => updateSpecification(index, 'value', e.target.value)}
+                        placeholder="Value (e.g., 3.3V, 500mA)"
+                        className="flex-1 text-sm"
+                      />
+                      {formData.specifications.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSpecification(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addSpecification}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Specification
+                </Button>
+              </div>
+            </div>
+
+            {/* Product Features */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 mb-4">
+                <ListChecks className="h-5 w-5 text-green-600" />
+                <h3 className="font-semibold">Product Features</h3>
+              </div>
+
+              <div className="space-y-3">
+                {formData.features.map((feature, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <Input
+                      value={feature}
+                      onChange={(e) => updateFeature(index, e.target.value)}
+                      placeholder="e.g., Built-in WiFi, USB-C charging, Water resistant"
+                      className="flex-1 text-sm"
+                    />
+                    {formData.features.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFeature(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addFeature}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Feature
+                </Button>
               </div>
             </div>
 
