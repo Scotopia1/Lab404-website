@@ -70,7 +70,7 @@ export const ContactSubmissions: React.FC = () => {
       if (searchTerm) params.search = searchTerm;
       if (statusFilter && statusFilter !== 'all') params.status = statusFilter;
 
-      const response = await apiClient.get('/contact-submissions/admin', { params });
+      const response = await apiClient.get('/contact-submissions/admin', params);
       return response.data;
     },
   });

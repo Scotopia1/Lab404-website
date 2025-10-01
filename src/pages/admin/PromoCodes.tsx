@@ -73,7 +73,7 @@ export const PromoCodes: React.FC = () => {
       const params: any = { limit: 100, sort_by: 'created_at', sort_order: 'desc' };
       if (searchTerm) params.search = searchTerm;
 
-      const response = await apiClient.get('/admin/promo-codes', { params });
+      const response = await apiClient.get('/admin/promo-codes', params);
       return response.data;
     },
   });
