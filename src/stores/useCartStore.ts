@@ -110,7 +110,7 @@ const initialState: CartStoreState = {
   loading: false,
   syncing: false,
   error: null,
-  taxRate: 0.11, // 11% tax rate for Lebanon
+  taxRate: 0, // No tax
   shippingThreshold: 100, // Free shipping over $100
   defaultShipping: 10,
   isOpen: false,

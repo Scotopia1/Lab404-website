@@ -1212,11 +1212,16 @@ class ApiClient {
 
   // Image upload methods
   async uploadImage(formData: FormData): Promise<{ url: string; fileId: string; originalName: string }> {
+    const token = TokenManager.getAccessToken();
+    const headers: HeadersInit = {};
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${API_BASE_URL}/upload/images`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.token}`
-      },
+      headers,
       body: formData // Don't set Content-Type header - browser will set it with boundary
     });
 

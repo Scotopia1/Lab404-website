@@ -226,7 +226,7 @@ export const SystemSettings: React.FC = () => {
             expressShippingCost: 30,
             standardDeliveryDays: 3,
             expressDeliveryDays: 1,
-            taxRate: 11,
+            taxRate: 0,
             shippingZones: 'Lebanon, Middle East',
           },
           emailSettings: {
