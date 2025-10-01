@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Star, Shield, Truck, RefreshCw, Loader2, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Star, Shield, Truck, RefreshCw, Loader2, ShoppingCart, ChevronLeft, ChevronRight, Check, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -247,7 +247,8 @@ const ProductDetail = () => {
                 width={600}
                 height={600}
                 className="w-full h-full object-cover object-center"
-                priority={selectedImageIndex === 0}
+                priority={true}
+                loading="eager"
                 fallbackSrc="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22600%22 height=%22600%22 viewBox=%220 0 600 600%22%3E%3Crect width=%22600%22 height=%22600%22 fill=%22%23f0f0f0%22/%3E%3Ctext x=%22300%22 y=%22300%22 text-anchor=%22middle%22 dy=%220.3em%22 fill=%22%23999%22 font-family=%22Arial, sans-serif%22 font-size=%2224%22%3EProduct Image%3C/text%3E%3C/svg%3E"
               />
 
@@ -424,6 +425,30 @@ const ProductDetail = () => {
           </div>
         </div>
 
+        {/* Product Features */}
+        {product.features && product.features.length > 0 && (
+          <div className="mt-16">
+            <Card className="bg-gradient-to-r from-blue-50 via-white to-blue-50 border border-blue-200 shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b border-blue-200">
+                <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
+                  <Sparkles className="h-6 w-6 mr-3 text-blue-600" />
+                  Key Features
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8">
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {product.features.map((feature, index) => (
+                    <li key={index} className="flex items-start bg-white p-4 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                      <Check className="h-5 w-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700 leading-relaxed">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Product Specifications */}
         <div className="mt-16">
           <Card className="bg-white border border-gray-200 shadow-lg">
@@ -436,10 +461,10 @@ const ProductDetail = () => {
             <CardContent className="p-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {Object.entries(product.specifications || {}).map(([key, value]) => (
-                  <div key={key} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                      <span className="font-semibold text-gray-800 text-lg mb-1 sm:mb-0">{key}:</span>
-                      <span className="text-gray-600 font-medium">{value}</span>
+                  <div key={key} className="bg-white rounded-lg p-5 border border-gray-200 shadow-sm hover:shadow-md transition-shadow hover:border-blue-300">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                      <span className="font-bold text-gray-900 text-base">{key}:</span>
+                      <span className="text-gray-700 font-medium bg-gray-50 px-3 py-1 rounded-md">{value}</span>
                     </div>
                   </div>
                 ))}

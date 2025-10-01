@@ -195,7 +195,7 @@
 /* Enhanced WhatsApp Button Styling */
 @layer components {
   .whatsapp-button {
-    @apply bg-accent text-accent-foreground hover:bg-accent/90 transition-colors duration-200;
+    @apply bg-green-600 text-white hover:bg-green-700 transition-colors duration-200 border-0;
   }
   
   .brand-button {

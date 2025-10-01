@@ -16,6 +16,7 @@ import { Categories } from '@/pages/admin/Categories';
 import AlibabaImport from '@/pages/AlibabaImport';
 import PromoCodes from '@/pages/admin/PromoCodes';
 import PromoCodeForm from '@/pages/admin/PromoCodeForm';
+import ContactSubmissions from '@/pages/admin/ContactSubmissions';
 
 const Admin: React.FC = () => {
   return (
@@ -36,6 +37,9 @@ const Admin: React.FC = () => {
 
           {/* Analytics */}
           <Route path="analytics/*" element={<Analytics />} />
+
+          {/* Contact Submissions */}
+          <Route path="contact-submissions" element={<ContactSubmissions />} />
 
           {/* Profile Settings */}
           <Route path="profile" element={<AdminProfile />} />

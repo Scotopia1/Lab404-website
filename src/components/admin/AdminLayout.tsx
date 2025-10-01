@@ -40,6 +40,7 @@ import {
   Folder,
   Import,
   Tag,
+  MessageSquare,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -105,6 +106,12 @@ const navigationItems: NavItem[] = [
     label: 'Analytics',
     icon: BarChart3,
     href: '/admin/analytics',
+  },
+  {
+    id: 'contact-submissions',
+    label: 'Contact Submissions',
+    icon: MessageSquare,
+    href: '/admin/contact-submissions',
   },
   {
     id: 'blogs',

@@ -45,8 +45,8 @@ const ProductCard = ({ product, showWhatsApp = true }: ProductCardProps) => {
       role="article"
       aria-labelledby={`product-title-${product.id}`}
     >
-      <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-        <Link 
+      <div className="relative overflow-hidden bg-white">
+        <Link
           to={`/product/${product.id}`}
           className="block focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-sm"
           aria-label={`View details for ${product.name}`}
@@ -57,7 +57,7 @@ const ProductCard = ({ product, showWhatsApp = true }: ProductCardProps) => {
               alt={`${product.name} - Product image showing ${product.description ? product.description.slice(0, 100) + '...' : 'electronic component'}`}
               width={300}
               height={200}
-              className="w-full h-full object-contain object-center group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
               fallbackSrc="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22 viewBox=%220 0 300 200%22%3E%3Crect width=%22300%22 height=%22200%22 fill=%22%23f0f0f0%22/%3E%3Ctext x=%22150%22 y=%22100%22 text-anchor=%22middle%22 dy=%220.3em%22 fill=%22%23999%22 font-family=%22Arial, sans-serif%22 font-size=%2214%22%3ENo Image%3C/text%3E%3C/svg%3E"
             />
           </div>
