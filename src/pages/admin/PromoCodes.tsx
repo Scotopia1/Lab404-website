@@ -171,7 +171,7 @@ export const PromoCodes: React.FC = () => {
     }
   };
 
-  const promoCodes = promoCodesData?.promo_codes || [];
+  const promoCodes = promoCodesData?.data || [];
 
   // Calculate if promo code is expired
   const isExpired = (promoCode: PromoCode) => {
