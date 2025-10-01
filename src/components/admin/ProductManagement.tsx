@@ -50,6 +50,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { apiClient } from '@/api/client';
+import { backendAuthService } from '@/lib/backendAuth';
 import { toast } from 'sonner';
 import { handleImageError, getFirstValidImage } from '@/lib/imageUtils';
 
@@ -378,6 +379,24 @@ export const ProductManagement: React.FC = () => {
     const files = event.target.files;
     if (!files) return;
 
+    // Check authentication before upload
+    if (!backendAuthService.isAuthenticated()) {
+      console.error('🔐 Upload failed: User not authenticated');
+      toast.error('Authentication required. Please log in again.');
+
+      // Clear the file input
+      event.target.value = '';
+
+      // Optional: Redirect to login or trigger auth refresh
+      try {
+        await backendAuthService.refreshAuth();
+        toast.info('Session refreshed. Please try uploading again.');
+      } catch (refreshError) {
+        console.error('Auth refresh failed:', refreshError);
+      }
+      return;
+    }
+
     try {
       // Show loading toast
       const uploadingToast = toast.loading(`Uploading ${files.length} image${files.length > 1 ? 's' : ''}...`);
@@ -407,9 +426,24 @@ export const ProductManagement: React.FC = () => {
       // Dismiss loading toast and show success
       toast.dismiss(uploadingToast);
       toast.success(`Successfully uploaded ${files.length} image${files.length > 1 ? 's' : ''}!`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading images:', error);
-      toast.error('Failed to upload images. Please try again.');
+
+      // Handle authentication errors specifically
+      if (error?.statusCode === 401 || error?.statusCode === 403) {
+        toast.error('Authentication expired. Please log in again.');
+        try {
+          await backendAuthService.refreshAuth();
+          toast.info('Session refreshed. Please try uploading again.');
+        } catch (refreshError) {
+          console.error('Auth refresh failed:', refreshError);
+        }
+      } else {
+        toast.error('Failed to upload images. Please try again.');
+      }
+
+      // Clear the file input on error
+      event.target.value = '';
     }
   };
 

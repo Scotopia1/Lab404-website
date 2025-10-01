@@ -203,9 +203,20 @@ export class ApiError extends Error {
 class TokenManager {
   private static readonly ACCESS_TOKEN_KEY = 'lab404_access_token';
   private static readonly REFRESH_TOKEN_KEY = 'lab404_refresh_token';
+  private static readonly TOKEN_EXPIRY_KEY = 'lab404_token_expiry';
+  private static readonly USER_DATA_KEY = 'lab404_user_data';
 
   static getAccessToken(): string | null {
-    return localStorage.getItem(this.ACCESS_TOKEN_KEY);
+    const token = localStorage.getItem(this.ACCESS_TOKEN_KEY);
+
+    // Check if token is expired
+    if (token && this.isTokenExpired()) {
+      console.log('🔓 Access token expired, clearing tokens');
+      this.clearTokens();
+      return null;
+    }
+
+    return token;
   }
 
   static setAccessToken(token: string): void {
@@ -223,12 +234,102 @@ class TokenManager {
   static clearTokens(): void {
     localStorage.removeItem(this.ACCESS_TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
+    localStorage.removeItem(this.USER_DATA_KEY);
   }
 
-  static setTokens(accessToken: string, refreshToken?: string): void {
+  static setTokens(accessToken: string, refreshToken?: string, expiresIn?: string): void {
     this.setAccessToken(accessToken);
     if (refreshToken) {
       this.setRefreshToken(refreshToken);
+    }
+
+    // Calculate and store expiry time
+    if (expiresIn) {
+      const expiryTime = this.calculateExpiryTime(expiresIn);
+      localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString());
+      console.log('🔐 Tokens stored, expires:', new Date(expiryTime).toLocaleString());
+    }
+  }
+
+  /**
+   * Calculate expiry timestamp from expiresIn string (e.g., "7d", "24h")
+   */
+  private static calculateExpiryTime(expiresIn: string): number {
+    const now = Date.now();
+    const match = expiresIn.match(/^(\d+)([dhms])$/);
+
+    if (!match) {
+      // Default to 7 days if format is invalid
+      return now + (7 * 24 * 60 * 60 * 1000);
+    }
+
+    const value = parseInt(match[1]);
+    const unit = match[2];
+
+    const multipliers: Record<string, number> = {
+      'd': 24 * 60 * 60 * 1000,  // days
+      'h': 60 * 60 * 1000,        // hours
+      'm': 60 * 1000,             // minutes
+      's': 1000                   // seconds
+    };
+
+    return now + (value * (multipliers[unit] || multipliers['d']));
+  }
+
+  /**
+   * Check if the token is expired
+   */
+  static isTokenExpired(): boolean {
+    const expiryStr = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
+    if (!expiryStr) {
+      return false; // No expiry set, assume valid
+    }
+
+    const expiry = parseInt(expiryStr);
+    return Date.now() >= expiry;
+  }
+
+  /**
+   * Check if token will expire soon (within 5 minutes)
+   */
+  static willExpireSoon(): boolean {
+    const expiryStr = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
+    if (!expiryStr) {
+      return false;
+    }
+
+    const expiry = parseInt(expiryStr);
+    const fiveMinutes = 5 * 60 * 1000;
+    return Date.now() >= (expiry - fiveMinutes);
+  }
+
+  /**
+   * Get token expiry time
+   */
+  static getTokenExpiryTime(): number | null {
+    const expiryStr = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
+    return expiryStr ? parseInt(expiryStr) : null;
+  }
+
+  /**
+   * Cache user data
+   */
+  static setUserData(userData: any): void {
+    localStorage.setItem(this.USER_DATA_KEY, JSON.stringify(userData));
+  }
+
+  /**
+   * Get cached user data
+   */
+  static getUserData(): any | null {
+    const data = localStorage.getItem(this.USER_DATA_KEY);
+    if (!data) return null;
+
+    try {
+      return JSON.parse(data);
+    } catch {
+      return null;
     }
   }
 }
@@ -256,6 +357,9 @@ class ApiClient {
       const token = TokenManager.getAccessToken();
       if (token) {
         headers.Authorization = `Bearer ${token}`;
+        console.log('🔑 Token attached to request (expires:', TokenManager.getTokenExpiryTime() ? new Date(TokenManager.getTokenExpiryTime()!).toLocaleTimeString() : 'unknown', ')');
+      } else {
+        console.log('⚠️ No token available for authenticated request');
       }
     }
 
@@ -346,9 +450,11 @@ class ApiClient {
       if (error instanceof ApiError) {
         // Handle token expiration
         if (error.statusCode === 401 && error.errorCode === 'TOKEN_EXPIRED') {
+          console.log('🔄 Token expired during request, attempting refresh...');
           // Try to refresh token
           const refreshed = await this.refreshToken();
           if (refreshed) {
+            console.log('✅ Token refreshed, retrying original request');
             // Retry the original request
             const retryHeaders = this.getHeaders(includeAuth);
             const retryConfig: RequestInit = {
@@ -359,14 +465,18 @@ class ApiClient {
             return await this.handleResponse<T>(response);
           } else {
             // Refresh failed, redirect to login
+            console.log('❌ Token refresh failed, clearing tokens and redirecting to login');
             TokenManager.clearTokens();
             window.location.href = '/theElitesSolutions/adminLogin';
           }
+        } else if (error.statusCode === 401 || error.statusCode === 403) {
+          console.error('🔒 Authentication error:', error.statusCode, error.message);
         }
         throw error;
       }
-      
+
       // Network or other errors
+      console.error('📡 Network error during API request:', error);
       throw new ApiError(
         error instanceof Error ? error.message : 'Network error',
         0
@@ -400,9 +510,11 @@ class ApiClient {
       if (error instanceof ApiError) {
         // Handle token expiration
         if (error.statusCode === 401 && error.errorCode === 'TOKEN_EXPIRED') {
+          console.log('🔄 Token expired during GET request, attempting refresh...');
           // Try to refresh token
           const refreshed = await this.refreshToken();
           if (refreshed) {
+            console.log('✅ Token refreshed, retrying GET request');
             // Retry the original request
             const retryConfig: RequestInit = {
               ...config,
@@ -461,21 +573,29 @@ class ApiClient {
   // Authentication methods
   async login(email: string, password: string): Promise<any> {
     const response = await this.post<any>('/auth/login', { email, password }, false);
-    
+
     if (response.token) {
-      TokenManager.setTokens(response.token, response.refreshToken);
+      TokenManager.setTokens(response.token, response.refreshToken, response.expiresIn);
+      // Cache user data for persistence
+      if (response.user) {
+        TokenManager.setUserData(response.user);
+      }
     }
-    
+
     return response;
   }
 
   async register(userData: any): Promise<any> {
     const response = await this.post<any>('/auth/register', userData, false);
-    
+
     if (response.token) {
-      TokenManager.setTokens(response.token, response.refreshToken);
+      TokenManager.setTokens(response.token, response.refreshToken, response.expiresIn);
+      // Cache user data for persistence
+      if (response.user) {
+        TokenManager.setUserData(response.user);
+      }
     }
-    
+
     return response;
   }
 
@@ -494,15 +614,18 @@ class ApiClient {
         return false;
       }
 
+      console.log('🔄 Refreshing authentication token...');
       const response = await this.post<any>('/auth/refresh', { refreshToken }, false);
-      
+
       if (response.token) {
-        TokenManager.setTokens(response.token, response.refreshToken);
+        TokenManager.setTokens(response.token, response.refreshToken, response.expiresIn);
+        console.log('✅ Token refreshed successfully');
         return true;
       }
-      
+
       return false;
     } catch (error) {
+      console.log('❌ Token refresh failed, clearing tokens');
       TokenManager.clearTokens();
       return false;
     }

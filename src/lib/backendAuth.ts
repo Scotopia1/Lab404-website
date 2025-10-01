@@ -47,30 +47,79 @@ export class BackendAuthService {
    */
   private async initialize() {
     try {
+      console.log('🔐 Initializing BackendAuthService...');
+
+      // First, try to restore user from cached data
+      const cachedUser = TokenManager.getUserData();
+      if (cachedUser) {
+        this.currentUser = cachedUser;
+        this.notifyListeners(cachedUser);
+        console.log('✅ User restored from cache:', cachedUser.email);
+      }
+
       // Check if we have a stored token
       const token = TokenManager.getAccessToken();
-      if (token) {
-        // Try to get current user to validate session
-        // But don't throw errors for initial load
+      if (!token) {
+        console.log('📭 No token found, user not authenticated');
+        return;
+      }
+
+      // Check if token will expire soon and refresh proactively
+      if (TokenManager.willExpireSoon()) {
+        console.log('⏰ Token expiring soon, refreshing proactively...');
+        try {
+          const refreshed = await apiClient.refreshToken();
+          if (!refreshed) {
+            console.log('❌ Proactive token refresh failed');
+            TokenManager.clearTokens();
+            this.currentUser = null;
+            this.notifyListeners(null);
+            return;
+          }
+        } catch (error) {
+          console.log('❌ Error during proactive refresh:', error);
+        }
+      }
+
+      // Try to get current user to validate session (with retries)
+      let retries = 2;
+      while (retries > 0) {
         try {
           await this.getCurrentUser();
+          console.log('✅ Session validated successfully');
+          return;
         } catch (error: any) {
-          // Only clear tokens if it's a real auth error, not network issues
+          retries--;
+
+          // Only clear tokens on confirmed auth errors (401/403)
           if (error.statusCode === 401 || error.statusCode === 403) {
-            console.log('🔓 Session expired, clearing tokens');
+            console.log('🔓 Session invalid (401/403), clearing tokens');
             TokenManager.clearTokens();
+            this.currentUser = null;
+            this.notifyListeners(null);
+            return;
+          }
+
+          // For network errors, retry with exponential backoff
+          if (retries > 0) {
+            const delay = (3 - retries) * 1000; // 1s, 2s
+            console.log(`📡 Network error during validation, retrying in ${delay}ms... (${retries} retries left)`);
+            await new Promise(resolve => setTimeout(resolve, delay));
           } else {
-            console.log('📡 Network error during auth initialization, keeping tokens for retry');
+            // After all retries failed, keep cached user but log warning
+            console.log('⚠️ Could not validate session online, using cached data');
           }
         }
       }
     } catch (error) {
-      console.error('Auth service initialization failed:', error);
-      // Clear invalid tokens only on auth errors
+      console.error('❌ Auth service initialization failed:', error);
+      // Only clear tokens on confirmed auth errors
       if (error && typeof error === 'object' && 'statusCode' in error) {
         const statusCode = (error as any).statusCode;
         if (statusCode === 401 || statusCode === 403) {
           TokenManager.clearTokens();
+          this.currentUser = null;
+          this.notifyListeners(null);
         }
       }
     }
@@ -132,6 +181,10 @@ export class BackendAuthService {
       if (response.user) {
         const appUser = this.transformAdminUser(response.user);
         this.currentUser = appUser;
+
+        // Cache user data for persistence across page reloads
+        TokenManager.setUserData(appUser);
+
         this.notifyListeners(appUser);
 
         console.log('✅ Backend login successful');
