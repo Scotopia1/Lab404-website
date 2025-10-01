@@ -131,4 +131,7 @@ export const mockProducts: Product[] = [
 ];
 
 // Export configurations for backward compatibility (now managed by env.ts)
-export { whatsappConfig, adminConfig as adminUser } from './env';
+export { whatsappConfig } from './env';
+
+// Note: Admin credentials are managed securely in the backend database
+// No hardcoded credentials should exist in the frontend

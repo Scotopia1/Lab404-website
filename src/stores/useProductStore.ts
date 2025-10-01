@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { db } from '../lib/services/database'
+import { apiClient } from '../api/client'
 import { realtimeManager } from '../lib/realtime'
 import type { ProductData, ProductSearchData } from '../lib/validation'
 import type { PaginatedResponse, ApiResponse } from '../lib/types'
@@ -133,30 +133,52 @@ export const useProductStore = create<ProductStore>()(
 
         fetchProducts: async () => {
           const state = get()
-          
+
           set({ loading: true, error: null })
 
           try {
-            const searchData: ProductSearchData = {
-              query: state.searchQuery || state.filters.search,
-              category: state.filters.category,
-              minPrice: state.filters.minPrice,
-              maxPrice: state.filters.maxPrice,
-              brand: state.filters.brand,
-              inStock: state.filters.inStock,
-              featured: state.filters.featured,
+            const params: any = {
               limit: state.pagination.limit,
               offset: (state.pagination.page - 1) * state.pagination.limit
             }
 
-            const response = await db.products.getAll(searchData)
-            
+            // Add filters
+            if (state.searchQuery || state.filters.search) {
+              params.search = state.searchQuery || state.filters.search
+            }
+            if (state.filters.category) {
+              params.category = state.filters.category
+            }
+            if (state.filters.brand) {
+              params.brand = state.filters.brand
+            }
+            if (state.filters.minPrice) {
+              params.minPrice = state.filters.minPrice
+            }
+            if (state.filters.maxPrice) {
+              params.maxPrice = state.filters.maxPrice
+            }
+            if (state.filters.inStock !== undefined) {
+              params.inStock = state.filters.inStock
+            }
+            if (state.filters.featured !== undefined) {
+              params.featured = state.filters.featured
+            }
+
+            const response = await apiClient.getProducts(params)
+
             set({
-              products: response.data,
-              pagination: response.pagination,
+              products: response.data || [],
+              pagination: {
+                page: state.pagination.page,
+                limit: state.pagination.limit,
+                total: response.total || 0,
+                totalPages: response.totalPages || 0
+              },
               loading: false
             })
           } catch (error) {
+            console.error('Failed to fetch products:', error)
             set({
               error: error instanceof Error ? error.message : 'Failed to fetch products',
               loading: false
@@ -168,20 +190,14 @@ export const useProductStore = create<ProductStore>()(
           set({ featuredLoading: true, error: null })
 
           try {
-            const response = await db.products.getFeatured(8)
-            
-            if (response.data) {
-              set({
-                featuredProducts: response.data,
-                featuredLoading: false
-              })
-            } else {
-              set({
-                error: response.error,
-                featuredLoading: false
-              })
-            }
+            const response = await apiClient.getProducts({ featured: true, limit: 8 })
+
+            set({
+              featuredProducts: response.data || [],
+              featuredLoading: false
+            })
           } catch (error) {
+            console.error('Failed to fetch featured products:', error)
             set({
               error: error instanceof Error ? error.message : 'Failed to fetch featured products',
               featuredLoading: false
@@ -193,22 +209,16 @@ export const useProductStore = create<ProductStore>()(
           set({ productLoading: true, error: null, currentProduct: null })
 
           try {
-            const response = await db.products.getById(id)
-            
-            if (response.data) {
-              set({
-                currentProduct: response.data,
-                productLoading: false
-              })
-            } else {
-              set({
-                error: response.error,
-                productLoading: false
-              })
-            }
-          } catch (error) {
+            const product = await apiClient.getProduct(id)
+
             set({
-              error: error instanceof Error ? error.message : 'Failed to fetch product',
+              currentProduct: product,
+              productLoading: false
+            })
+          } catch (error) {
+            console.error('Failed to fetch product:', error)
+            set({
+              error: error instanceof Error ? error.message : 'Product not found',
               productLoading: false
             })
           }

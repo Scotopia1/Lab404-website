@@ -39,6 +39,7 @@ import {
   FileText,
   Folder,
   Import,
+  Tag,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -86,6 +87,12 @@ const navigationItems: NavItem[] = [
     label: 'Categories',
     icon: Folder,
     href: '/admin/categories',
+  },
+  {
+    id: 'promo-codes',
+    label: 'Promo Codes',
+    icon: Tag,
+    href: '/admin/promo-codes',
   },
   {
     id: 'orders',

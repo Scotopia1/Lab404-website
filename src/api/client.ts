@@ -1242,6 +1242,160 @@ class ApiClient {
   async deleteImage(fileId: string): Promise<{ fileId: string }> {
     return this.delete(`/upload/images/${fileId}`);
   }
+
+  // Promo Code methods (public)
+  async validatePromoCode(code: string, orderSubtotal: number, cartItems?: Array<{
+    sku: string;
+    quantity: number;
+    price: number;
+  }>): Promise<{
+    code: string;
+    discount_type: string;
+    discount_value: number;
+    discount_amount: number;
+    applies_to: string;
+  }> {
+    return this.post('/promo-codes/validate', {
+      code,
+      order_subtotal: orderSubtotal,
+      cart_items: cartItems,
+    });
+  }
+
+  // Admin Promo Code methods
+  async getPromoCodes(filters?: {
+    code?: string;
+    discount_type?: string;
+    applies_to?: string;
+    is_active?: boolean;
+    is_expired?: boolean;
+    search?: string;
+    sort_by?: string;
+    sort_order?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{
+    promo_codes: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const queryParams = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+
+    const queryString = queryParams.toString();
+    return this.get(`/admin/promo-codes${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getPromoCodeStats(): Promise<{
+    total_codes: number;
+    active_codes: number;
+    expired_codes: number;
+    total_uses: number;
+    total_discount_given: number;
+    most_used_code?: any;
+    recent_codes: any[];
+  }> {
+    return this.get('/admin/promo-codes/stats');
+  }
+
+  async getPromoCodeById(id: string): Promise<any> {
+    return this.get(`/admin/promo-codes/${id}`);
+  }
+
+  async getPromoCodeUsage(id: string): Promise<any[]> {
+    return this.get(`/admin/promo-codes/${id}/usage`);
+  }
+
+  async createPromoCode(data: {
+    code: string;
+    description?: string;
+    discount_type: string;
+    discount_value: number;
+    applies_to: string;
+    product_skus?: string[];
+    max_uses?: number;
+    start_date?: string;
+    end_date?: string;
+    is_active?: boolean;
+  }): Promise<any> {
+    return this.post('/admin/promo-codes', data);
+  }
+
+  async updatePromoCode(id: string, data: Partial<{
+    code: string;
+    description?: string;
+    discount_type: string;
+    discount_value: number;
+    applies_to: string;
+    product_skus?: string[];
+    max_uses?: number;
+    start_date?: string;
+    end_date?: string;
+    is_active?: boolean;
+  }>): Promise<any> {
+    return this.put(`/admin/promo-codes/${id}`, data);
+  }
+
+  async deletePromoCode(id: string): Promise<void> {
+    return this.delete(`/admin/promo-codes/${id}`);
+  }
+
+  async bulkDeletePromoCodes(ids: string[]): Promise<{ deleted_count: number }> {
+    return this.post('/admin/promo-codes/bulk-delete', { ids });
+  }
+
+  async exportPromoCodes(): Promise<Blob> {
+    const token = TokenManager.getAccessToken();
+    const headers: HeadersInit = {
+      'Authorization': `Bearer ${token}`
+    };
+
+    const response = await fetch(`${API_BASE_URL}/admin/promo-codes/export`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to export promo codes');
+    }
+
+    return response.blob();
+  }
+
+  async downloadPromoTemplate(): Promise<Blob> {
+    const token = TokenManager.getAccessToken();
+    const headers: HeadersInit = {
+      'Authorization': `Bearer ${token}`
+    };
+
+    const response = await fetch(`${API_BASE_URL}/admin/promo-codes/template`, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to download template');
+    }
+
+    return response.blob();
+  }
+
+  async importPromoCodes(csvData: string): Promise<{
+    total_rows: number;
+    imported: number;
+    skipped: number;
+    errors: Array<{ row: number; error: string }>;
+  }> {
+    return this.post('/admin/promo-codes/import', { csvData });
+  }
 }
 
 // Export singleton instance

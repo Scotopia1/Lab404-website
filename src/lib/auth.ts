@@ -1,5 +1,4 @@
 import { apiClient } from '@/api/client';
-import { adminConfig } from './env';
 import { errorHandler } from './errorHandler';
 import type { User as AppUser, AuthState } from './types';
 
@@ -123,14 +122,12 @@ export class AuthService {
    * Transform Supabase user to app user format
    */
   private async transformSupabaseUser(user: User): Promise<AppUser> {
-    // Check if user is admin based on email
-    const isAdmin = user.email === adminConfig.email;
-
+    // Role is determined by the backend API, not by email comparison
     return {
       id: user.id,
       email: user.email || '',
       name: user.user_metadata?.name || user.email?.split('@')[0] || '',
-      role: isAdmin ? 'admin' : 'user',
+      role: user.user_metadata?.role || 'user',
       avatar: user.user_metadata?.avatar_url,
       createdAt: user.created_at,
       updatedAt: user.updated_at || user.created_at,
@@ -469,39 +466,10 @@ export class AuthService {
   }
 
   /**
-   * Create admin user (for development/setup)
+   * Create admin user - REMOVED
+   * Admin users should be created via the backend API only
+   * This prevents hardcoded credentials in the frontend
    */
-  async createAdminUser(): Promise<AuthResponse<AppUser>> {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: adminConfig.email,
-        password: adminConfig.password,
-        options: {
-          data: {
-            name: 'LAB404 Administrator',
-            role: 'admin',
-          },
-        },
-      });
-
-      if (error) {
-        return { data: null, error: error.message };
-      }
-
-      if (data.user) {
-        const appUser = await this.transformSupabaseUser(data.user);
-        return { data: appUser, error: null };
-      }
-
-      return { data: null, error: 'Admin user creation failed' };
-    } catch (error) {
-      console.error('Create admin user error:', error);
-      return { 
-        data: null, 
-        error: 'An unexpected error occurred while creating admin user' 
-      };
-    }
-  }
 }
 
 // Singleton instance

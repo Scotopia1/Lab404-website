@@ -14,6 +14,8 @@ import { AdminProfile } from '@/components/admin/AdminProfile';
 import { BlogManagement } from '@/components/admin/BlogManagement';
 import { Categories } from '@/pages/admin/Categories';
 import AlibabaImport from '@/pages/AlibabaImport';
+import PromoCodes from '@/pages/admin/PromoCodes';
+import PromoCodeForm from '@/pages/admin/PromoCodeForm';
 
 const Admin: React.FC = () => {
   return (
@@ -46,6 +48,11 @@ const Admin: React.FC = () => {
 
           {/* Category Management */}
           <Route path="categories" element={<Categories />} />
+
+          {/* Promo Code Management */}
+          <Route path="promo-codes" element={<PromoCodes />} />
+          <Route path="promo-codes/new" element={<PromoCodeForm />} />
+          <Route path="promo-codes/:id" element={<PromoCodeForm />} />
 
           {/* System Settings (Super Admin Only) */}
           <Route

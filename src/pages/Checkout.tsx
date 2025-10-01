@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Calendar, ChevronLeft, ChevronRight, Minus, Plus, Star, Menu, X, MapPin } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Calendar, ChevronLeft, ChevronRight, Minus, Plus, Star, Menu, X, MapPin, Tag, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,6 +57,17 @@ export default function Checkout() {
 
   const [errors, setErrors] = useState<Partial<Record<keyof CheckoutFormData, string>>>({});
 
+  // Promo code state
+  const [promoCode, setPromoCode] = useState('');
+  const [promoCodeApplied, setPromoCodeApplied] = useState<{
+    code: string;
+    discount_type: string;
+    discount_value: number;
+    discount_amount: number;
+  } | null>(null);
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
+  const [promoError, setPromoError] = useState('');
+
   // Redirect if cart is empty
   useEffect(() => {
     if (items.length === 0) {
@@ -94,6 +105,53 @@ export default function Checkout() {
     }
   };
 
+  // Apply promo code
+  const handleApplyPromoCode = async () => {
+    if (!promoCode.trim()) {
+      setPromoError('Please enter a promo code');
+      return;
+    }
+
+    setIsValidatingPromo(true);
+    setPromoError('');
+
+    try {
+      const cartItems = items.map((item, index) => ({
+        sku: item.productId, // Using productId as SKU
+        quantity: item.quantity,
+        price: item.price,
+      }));
+
+      const result = await apiClient.validatePromoCode(
+        promoCode.toUpperCase(),
+        cartSummary.subtotal,
+        cartItems
+      );
+
+      setPromoCodeApplied(result);
+      toast.success(`Promo code applied! You saved $${result.discount_amount.toFixed(2)}`);
+    } catch (error: any) {
+      setPromoError(error.message || 'Invalid promo code');
+      setPromoCodeApplied(null);
+      toast.error(error.message || 'Invalid promo code');
+    } finally {
+      setIsValidatingPromo(false);
+    }
+  };
+
+  // Remove promo code
+  const handleRemovePromoCode = () => {
+    setPromoCode('');
+    setPromoCodeApplied(null);
+    setPromoError('');
+    toast.info('Promo code removed');
+  };
+
+  // Calculate final total with promo code discount
+  const finalTotal = promoCodeApplied
+    ? cartSummary.total - promoCodeApplied.discount_amount
+    : cartSummary.total;
+
   // Handle form submission
   const handleSubmit = async () => {
     if (!validateForm()) return;
@@ -124,6 +182,7 @@ export default function Checkout() {
         },
         notes: formData.note || '',
         currency: 'USD',
+        promo_code: promoCodeApplied?.code || undefined,
       };
 
       const response = await apiClient.post('/orders', orderData);
@@ -326,6 +385,58 @@ export default function Checkout() {
                 </div>
               ))}
 
+              {/* Promo Code */}
+              <div className="pt-4 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag className="h-4 w-4 text-blue-600" />
+                  <Label className="text-sm font-medium text-gray-700">Have a promo code?</Label>
+                </div>
+                {!promoCodeApplied ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter promo code"
+                      value={promoCode}
+                      onChange={(e) => {
+                        setPromoCode(e.target.value.toUpperCase());
+                        setPromoError('');
+                      }}
+                      className={cn("flex-1", promoError && "border-red-300")}
+                      disabled={isValidatingPromo}
+                    />
+                    <Button
+                      onClick={handleApplyPromoCode}
+                      disabled={isValidatingPromo || !promoCode.trim()}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      {isValidatingPromo ? 'Validating...' : 'Apply'}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-blue-900">{promoCodeApplied.code}</p>
+                        <p className="text-xs text-blue-700">
+                          {promoCodeApplied.discount_type === 'percentage'
+                            ? `${promoCodeApplied.discount_value}% off`
+                            : `$${promoCodeApplied.discount_value.toFixed(2)} off`}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemovePromoCode}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+                {promoError && <p className="text-xs text-red-600">{promoError}</p>}
+              </div>
+
               {/* Totals */}
               <div className="pt-6 space-y-3 bg-green-50 rounded-lg p-4 border border-green-200">
                 <div className="flex justify-between text-sm text-gray-700">
@@ -342,11 +453,22 @@ export default function Checkout() {
                   <span className="font-medium">Shipping</span>
                   <span className="font-semibold text-green-700">Free</span>
                 </div>
+                {promoCodeApplied && (
+                  <div className="flex justify-between text-sm text-blue-700 bg-blue-100 -mx-4 px-4 py-2">
+                    <span className="font-medium">Promo Discount ({promoCodeApplied.code})</span>
+                    <span className="font-semibold">-${promoCodeApplied.discount_amount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="border-t border-green-300 pt-3">
                   <div className="flex justify-between text-lg font-bold text-green-800">
                     <span>Total (USD)</span>
-                    <span>${cartSummary.total.toFixed(2)}</span>
+                    <span>${finalTotal.toFixed(2)}</span>
                   </div>
+                  {promoCodeApplied && (
+                    <p className="text-xs text-green-700 mt-1">
+                      You saved ${promoCodeApplied.discount_amount.toFixed(2)}!
+                    </p>
+                  )}
                 </div>
               </div>
 
