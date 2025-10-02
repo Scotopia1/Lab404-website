@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, ShoppingCart, Menu, Home, Package } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Menu, Home, Package, Info } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -387,6 +387,23 @@ const Store = () => {
         priceRange={priceRange}
         handlePriceRangeChange={handlePriceRangeChange}
       />
+
+      {/* Limited Inventory Notice */}
+      <div className="bg-blue-50 border-b border-blue-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <Alert className="border-blue-300 bg-blue-50">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-900">
+              <span className="font-medium">Limited product catalog:</span> Due to time constraints, we couldn't add our full inventory to the website yet.
+              However, we can source <strong>any electronic part you need</strong>! Please{' '}
+              <Link to="/#contact" className="underline font-semibold hover:text-blue-700 transition-colors">
+                submit the contact form
+              </Link>
+              {' '}and we'll get in touch with you as soon as possible.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Advanced Filters Panel */}
