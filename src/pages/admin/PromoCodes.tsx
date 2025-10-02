@@ -74,7 +74,7 @@ export const PromoCodes: React.FC = () => {
       if (searchTerm) params.search = searchTerm;
 
       const response = await apiClient.get('/admin/promo-codes', params);
-      return response.data;
+      return response;
     },
   });
 
@@ -137,8 +137,9 @@ export const PromoCodes: React.FC = () => {
   // Download template
   const handleDownloadTemplate = async () => {
     try {
-      const response = await apiClient.get('/admin/promo-codes/template', { responseType: 'blob' });
-      const blob = new Blob([response], { type: 'text/csv' });
+      const response = await apiClient.get('/admin/promo-codes/template');
+      const csvText = typeof response === 'string' ? response : response.data;
+      const blob = new Blob([csvText], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -156,8 +157,9 @@ export const PromoCodes: React.FC = () => {
   // Export promo codes
   const handleExport = async () => {
     try {
-      const response = await apiClient.get('/admin/promo-codes/export', { responseType: 'blob' });
-      const blob = new Blob([response], { type: 'text/csv' });
+      const response = await apiClient.get('/admin/promo-codes/export');
+      const csvText = typeof response === 'string' ? response : response.data;
+      const blob = new Blob([csvText], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
