@@ -1121,12 +1121,6 @@ export const OrderManagement: React.FC = () => {
                       <span>${selectedOrder.subtotal.toFixed(2)}</span>
                     </div>
                   )}
-                  {selectedOrder.tax_amount && selectedOrder.tax_amount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span>Tax (11% VAT):</span>
-                      <span>${selectedOrder.tax_amount.toFixed(2)}</span>
-                    </div>
-                  )}
                   {selectedOrder.shipping_amount && selectedOrder.shipping_amount > 0 && (
                     <div className="flex justify-between text-sm">
                       <span>Shipping:</span>

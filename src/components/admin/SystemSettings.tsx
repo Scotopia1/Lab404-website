@@ -61,7 +61,6 @@ const shippingSettingsSchema = z.object({
   expressShippingCost: z.number().min(0),
   standardDeliveryDays: z.number().min(1).max(30),
   expressDeliveryDays: z.number().min(1).max(10),
-  taxRate: z.number().min(0).max(100),
   shippingZones: z.string(),
 });
 
@@ -147,7 +146,6 @@ export const SystemSettings: React.FC = () => {
       expressShippingCost: 25,
       standardDeliveryDays: 5,
       expressDeliveryDays: 2,
-      taxRate: 0,
       shippingZones: 'Domestic',
     },
   });
@@ -226,7 +224,6 @@ export const SystemSettings: React.FC = () => {
             expressShippingCost: 30,
             standardDeliveryDays: 3,
             expressDeliveryDays: 1,
-            taxRate: 0,
             shippingZones: 'Lebanon, Middle East',
           },
           emailSettings: {
@@ -823,25 +820,6 @@ export const SystemSettings: React.FC = () => {
                         placeholder="2"
                       />
                     </div>
-                  </div>
-                </div>
-
-                {/* Tax Settings */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Tax Configuration</h3>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="taxRate">Tax Rate (%)</Label>
-                    <Input
-                      id="taxRate"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      {...shippingForm.register('taxRate', { valueAsNumber: true })}
-                      placeholder="8.5"
-                    />
-                    <p className="text-sm text-gray-500">Default tax rate for all products</p>
                   </div>
                 </div>
 

@@ -236,10 +236,10 @@ export const ManualOrderCreation: React.FC<ManualOrderCreationProps> = ({
   // Calculate order totals
   const calculateTotals = () => {
     const subtotal = orderItems.reduce((sum, item) => sum + item.total_price, 0);
-    const taxRate = 0.11; // 11% VAT
-    const taxAmount = subtotal * taxRate;
+    const taxRate = 0; // No tax
+    const taxAmount = 0;
     const shippingAmount = subtotal >= 100 ? 0 : 5; // Free shipping over $100
-    const total = subtotal + taxAmount + shippingAmount;
+    const total = subtotal + shippingAmount;
 
     return {
       subtotal,
@@ -659,10 +659,6 @@ export const ManualOrderCreation: React.FC<ManualOrderCreationProps> = ({
                         <div className="flex justify-between">
                           <span>Subtotal:</span>
                           <span>${totals.subtotal.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Tax (11% VAT):</span>
-                          <span>${totals.taxAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Shipping:</span>
