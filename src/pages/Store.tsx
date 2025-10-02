@@ -338,8 +338,21 @@ const Store = () => {
     images: product.images || [product.image_url],
   });
 
+  // Sort products based on sortBy state
+  const sortedProducts = useMemo(() => {
+    const productsCopy = [...products];
 
-
+    switch (sortBy) {
+      case 'name':
+        return productsCopy.sort((a, b) => a.name.localeCompare(b.name));
+      case 'price-low':
+        return productsCopy.sort((a, b) => a.price - b.price);
+      case 'price-high':
+        return productsCopy.sort((a, b) => b.price - a.price);
+      default:
+        return productsCopy;
+    }
+  }, [products, sortBy]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -446,7 +459,7 @@ const Store = () => {
         {/* Results Summary */}
         <div className="flex items-center justify-between mb-6">
           <div className="text-sm text-gray-600">
-            Showing {products.length} products
+            Showing {sortedProducts.length} products
             {selectedCategory !== 'all' && (
               <span className="ml-2">
                 in <Badge variant="outline" className="border-blue-200 text-blue-600">{selectedCategory}</Badge>
@@ -476,14 +489,14 @@ const Store = () => {
               </Alert>
               <Button onClick={fetchProducts}>Retry</Button>
             </div>
-          ) : products.length > 0 ? (
+          ) : sortedProducts.length > 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             >
-              {products.map((product) => (
+              {sortedProducts.map((product) => (
                 <ProductCard key={product.id} product={transformProductData(product)} />
               ))}
             </motion.div>

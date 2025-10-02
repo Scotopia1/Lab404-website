@@ -248,7 +248,6 @@ const ProductDetail = () => {
                 height={600}
                 className="w-full h-full object-cover object-center"
                 priority={true}
-                loading="eager"
                 fallbackSrc="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22600%22 height=%22600%22 viewBox=%220 0 600 600%22%3E%3Crect width=%22600%22 height=%22600%22 fill=%22%23f0f0f0%22/%3E%3Ctext x=%22300%22 y=%22300%22 text-anchor=%22middle%22 dy=%220.3em%22 fill=%22%23999%22 font-family=%22Arial, sans-serif%22 font-size=%2224%22%3EProduct Image%3C/text%3E%3C/svg%3E"
               />
 
