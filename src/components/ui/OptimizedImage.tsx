@@ -94,19 +94,34 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   style,
   ...props
 }) => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!priority);
   const [error, setError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState(priority ? src : '');
+  const [currentSrc, setCurrentSrc] = useState(src);
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const { prefersReducedMotion } = useReducedMotion();
+  const loadedSrcRef = useRef<string | null>(null);
 
   // Update currentSrc when src prop changes
   useEffect(() => {
-    if (priority) {
-      setCurrentSrc(src);
-      setLoading(true);
+    setCurrentSrc(src);
+
+    // Check if image is already cached/loaded
+    if (priority && imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+      setLoading(false);
       setError(false);
+      loadedSrcRef.current = src;
+    } else if (priority) {
+      // For priority images, show immediately but keep loading state
+      // This prevents blank screen while image loads
+      setLoading(false);
+      setError(false);
+    } else {
+      // For lazy images, reset loading state
+      if (loadedSrcRef.current !== src) {
+        setLoading(true);
+        setError(false);
+      }
     }
   }, [src, priority]);
 
@@ -157,13 +172,14 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   const handleLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
     setLoading(false);
     setError(false);
+    loadedSrcRef.current = currentSrc;
     onLoad?.(event);
   };
 
   const handleError = (event: React.SyntheticEvent<HTMLImageElement>) => {
     setLoading(false);
     setError(true);
-    
+
     // Try fallback image if available
     if (fallbackSrc && currentSrc !== fallbackSrc) {
       setCurrentSrc(fallbackSrc);
@@ -171,7 +187,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
       setLoading(true);
       return;
     }
-    
+
     onError?.(event);
   };
 
@@ -189,11 +205,10 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
   
   const imgStyle: CSSProperties = {
     ...style,
-    transition: prefersReducedMotion 
-      ? 'none' 
-      : 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out',
-    opacity: loading ? 0 : 1,
-    transform: loading ? 'scale(1.05)' : 'scale(1)',
+    transition: prefersReducedMotion
+      ? 'none'
+      : 'opacity 0.3s ease-in-out',
+    opacity: (priority || !loading) ? 1 : 0,
   };
 
   if (width) imgStyle.width = width;

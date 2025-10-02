@@ -241,9 +241,8 @@ const ProductDetail = () => {
           <div className="space-y-4">
             <div className="aspect-square bg-white rounded-lg overflow-hidden shadow-sm flex items-center justify-center relative group">
               <OptimizedImage
-                key={`${product.id}-${selectedImageIndex}`}
                 src={product.images[selectedImageIndex]}
-                alt={product.name}
+                alt={`${product.name} - Image ${selectedImageIndex + 1}`}
                 width={600}
                 height={600}
                 className="w-full h-full object-cover object-center"
