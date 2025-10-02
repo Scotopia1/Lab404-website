@@ -125,20 +125,20 @@ const HeroSection = () => {
             </motion.p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             variants={fadeInUp}
-            className="flex flex-col sm:flex-row gap-6 justify-center mt-12 px-4"
+            className="flex justify-center mt-12 px-4"
           >
             <Link to="/store">
               <motion.div
                 {...scaleOnHover}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   boxShadow: "0 20px 40px rgba(239, 68, 68, 0.4)"
                 }}
               >
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-lg px-8 py-4 h-14 shadow-2xl border-0 relative overflow-hidden group"
                 >
                   <motion.div
@@ -157,25 +157,6 @@ const HeroSection = () => {
                 </Button>
               </motion.div>
             </Link>
-            
-            <motion.div
-              {...scaleOnHover}
-              whileHover={{ 
-                scale: 1.05,
-                boxShadow: "0 20px 40px rgba(59, 130, 246, 0.4)"
-              }}
-            >
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="w-full sm:w-auto text-white border-2 border-white/30 hover:bg-white/10 hover:border-white/50 text-lg px-8 py-4 h-14 backdrop-blur-sm bg-white/5 shadow-2xl relative overflow-hidden group"
-              >
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                />
-                <span className="relative z-10">Browse Products</span>
-              </Button>
-            </motion.div>
           </motion.div>
         </motion.div>
       </div>
