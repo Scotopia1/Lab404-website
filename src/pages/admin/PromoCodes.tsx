@@ -106,7 +106,7 @@ export const PromoCodes: React.FC = () => {
   const importMutation = useMutation({
     mutationFn: async (csvData: string) => {
       const response = await apiClient.post('/admin/promo-codes/import', { csvData });
-      return response.data;
+      return response;
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['admin-promo-codes'] });
