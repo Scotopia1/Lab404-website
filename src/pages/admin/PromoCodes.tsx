@@ -83,7 +83,7 @@ export const PromoCodes: React.FC = () => {
     queryKey: ['promo-code-stats'],
     queryFn: async () => {
       const response = await apiClient.get('/admin/promo-codes/stats');
-      return response.data;
+      return response;
     },
   });
 
