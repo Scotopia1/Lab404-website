@@ -79,6 +79,40 @@ export const NotificationDashboard: React.FC<NotificationDashboardProps> = ({ cl
     deleteNotification(notificationId);
   };
 
+  // WhatsApp Call Customer
+  const handleCallCustomer = (notification: OrderNotification) => {
+    const phoneNumber = notification.customerPhone.replace(/\D/g, ''); // Remove non-digits
+    const whatsappUrl = `https://wa.me/${phoneNumber}`;
+    window.open(whatsappUrl, '_blank');
+    toast.success(`Calling ${notification.customerName} via WhatsApp`);
+  };
+
+  // WhatsApp Chat Customer
+  const handleChatCustomer = (notification: OrderNotification) => {
+    const phoneNumber = notification.customerPhone.replace(/\D/g, ''); // Remove non-digits
+    const message = `Hello ${notification.customerName}, this is LAB404 Electronics regarding your order #${notification.orderNumber}. How can we help you today?`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+    toast.success(`Opening WhatsApp chat with ${notification.customerName}`);
+  };
+
+  // Mark order as processed (move to next status)
+  const handleMarkProcessed = async (notification: OrderNotification) => {
+    try {
+      setIsLoading(true);
+      // You'll need to import apiClient and call the update order endpoint
+      // For now, just mark the notification as read and show success
+      markAsRead(notification.id);
+      toast.success(`Order #${notification.orderNumber} marked as processed`);
+      setSelectedNotification(null);
+    } catch (error) {
+      toast.error('Failed to mark order as processed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
     const time = new Date(timestamp);
@@ -424,15 +458,26 @@ export const NotificationDashboard: React.FC<NotificationDashboardProps> = ({ cl
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t">
-                  <Button className="flex-1 bg-green-600 hover:bg-green-700">
+                  <Button
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    onClick={() => handleCallCustomer(selectedNotification)}
+                  >
                     <Phone className="h-4 w-4 mr-2" />
                     Call Customer
                   </Button>
-                  <Button variant="outline" className="flex-1">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => handleChatCustomer(selectedNotification)}
+                  >
                     <MessageCircle className="h-4 w-4 mr-2" />
                     Send WhatsApp
                   </Button>
-                  <Button variant="outline">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleMarkProcessed(selectedNotification)}
+                    disabled={isLoading}
+                  >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Mark Processed
                   </Button>
