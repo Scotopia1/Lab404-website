@@ -71,7 +71,7 @@ export const ContactSubmissions: React.FC = () => {
       if (statusFilter && statusFilter !== 'all') params.status = statusFilter;
 
       const response = await apiClient.get('/contact-submissions/admin', params);
-      return response.data;
+      return response;
     },
   });
 
@@ -295,7 +295,7 @@ export const ContactSubmissions: React.FC = () => {
           <CardHeader>
             <CardTitle>Submissions</CardTitle>
             <CardDescription>
-              {submissionsData?.total || 0} total submission{submissionsData?.total !== 1 ? 's' : ''}
+              {submissionsData?.pagination?.total || 0} total submission{submissionsData?.pagination?.total !== 1 ? 's' : ''}
             </CardDescription>
           </CardHeader>
           <CardContent>
