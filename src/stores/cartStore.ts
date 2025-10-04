@@ -81,11 +81,9 @@ const calculateCartSummary = (items: CartItem[]): CartSummary => {
   // Tax calculation (11% VAT in Lebanon)
   const taxRate = 0.11;
   const tax = subtotal * taxRate;
-  
-  // Shipping calculation (free over $100, otherwise $15)
-  const shippingThreshold = 100;
-  const shippingCost = 15;
-  const shipping = subtotal >= shippingThreshold ? 0 : shippingCost;
+
+  // Shipping calculation - $0 delivery fee
+  const shipping = 0;
   
   // Discount calculation (placeholder for future promotions)
   const discount = 0;

@@ -141,9 +141,9 @@ export const SystemSettings: React.FC = () => {
   const shippingForm = useForm<ShippingSettingsData>({
     resolver: zodResolver(shippingSettingsSchema),
     defaultValues: {
-      freeShippingThreshold: 100,
-      standardShippingCost: 10,
-      expressShippingCost: 25,
+      freeShippingThreshold: 0,
+      standardShippingCost: 0,
+      expressShippingCost: 0,
       standardDeliveryDays: 5,
       expressDeliveryDays: 2,
       shippingZones: 'Domestic',
@@ -219,9 +219,9 @@ export const SystemSettings: React.FC = () => {
             transactionFee: 2.5,
           },
           shippingSettings: {
-            freeShippingThreshold: 150,
-            standardShippingCost: 15,
-            expressShippingCost: 30,
+            freeShippingThreshold: 0,
+            standardShippingCost: 0,
+            expressShippingCost: 0,
             standardDeliveryDays: 3,
             expressDeliveryDays: 1,
             shippingZones: 'Lebanon, Middle East',
