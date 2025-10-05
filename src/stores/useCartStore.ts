@@ -112,7 +112,7 @@ const initialState: CartStoreState = {
   error: null,
   taxRate: 0, // No tax
   shippingThreshold: 100, // Free shipping over $100
-  defaultShipping: 10,
+  defaultShipping: 0, // Free delivery for all orders
   isOpen: false,
   userId: null,
   isGuest: true,
