@@ -337,10 +337,6 @@ const Store = () => {
     setPageSize(newLimit);
   };
 
-  // Check if there are more products to load
-  const hasMoreProducts = sortedProducts.length < pagination.total;
-
-
   // Transform product data to match ProductCard component expectations
   const transformProductData = (product: any) => ({
     ...product,
@@ -364,6 +360,9 @@ const Store = () => {
         return productsCopy;
     }
   }, [products, sortBy]);
+
+  // Check if there are more products to load
+  const hasMoreProducts = sortedProducts.length < pagination.total;
 
   return (
     <div className="min-h-screen bg-gray-50">
