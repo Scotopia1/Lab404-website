@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, ShoppingCart, Menu, Home, Package, Info } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Menu, Home, Package, Info, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -258,15 +258,17 @@ const Store = () => {
   const [cartOpen, setCartOpen] = useState(false);
 
   // Use ProductStore for filtering and data
-  const { 
-    products, 
-    loading, 
-    error, 
+  const {
+    products,
+    loading,
+    error,
     fetchProducts,
     setFilters,
     setSearchQuery: setStoreSearchQuery,
     clearErrors,
-    clearFilters
+    clearFilters,
+    pagination,
+    setPageSize
   } = useProductStore();
 
   const { addItem, loading: cartLoading } = useCartStore();
@@ -328,6 +330,15 @@ const Store = () => {
       toast.error('Failed to add item to cart');
     }
   };
+
+  // Handle Load More
+  const handleLoadMore = () => {
+    const newLimit = pagination.limit + 20;
+    setPageSize(newLimit);
+  };
+
+  // Check if there are more products to load
+  const hasMoreProducts = sortedProducts.length < pagination.total;
 
 
   // Transform product data to match ProductCard component expectations
@@ -507,16 +518,49 @@ const Store = () => {
               <Button onClick={fetchProducts}>Retry</Button>
             </div>
           ) : sortedProducts.length > 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            >
-              {sortedProducts.map((product) => (
-                <ProductCard key={product.id} product={transformProductData(product)} />
-              ))}
-            </motion.div>
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              >
+                {sortedProducts.map((product) => (
+                  <ProductCard key={product.id} product={transformProductData(product)} />
+                ))}
+              </motion.div>
+
+              {/* Load More Button */}
+              {hasMoreProducts && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center justify-center mt-12 mb-8"
+                >
+                  <p className="text-sm text-gray-600 mb-4">
+                    Showing {sortedProducts.length} of {pagination.total} products
+                  </p>
+                  <Button
+                    onClick={handleLoadMore}
+                    disabled={loading}
+                    size="lg"
+                    className="min-w-[200px]"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        Load More Products
+                        <Package className="h-4 w-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </motion.div>
+              )}
+            </>
           ) : (
             <EmptyState
               title="No products found"
