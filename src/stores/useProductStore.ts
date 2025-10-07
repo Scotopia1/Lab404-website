@@ -172,8 +172,8 @@ export const useProductStore = create<ProductStore>()(
               pagination: {
                 page: state.pagination.page,
                 limit: state.pagination.limit,
-                total: response.total || 0,
-                totalPages: response.totalPages || 0
+                total: response.pagination?.total || 0,
+                totalPages: response.pagination?.totalPages || 0
               },
               loading: false
             })
