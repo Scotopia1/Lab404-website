@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAccessibleAnnouncement } from '@/hooks/useFocusManagement';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Search, X, Clock, TrendingUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,12 +23,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
   className = ""
 }) => {
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 300); // Debounce suggestions by 300ms
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [popularSearches, setPopularSearches] = useState<string[]>([]);
-  
+
   const searchEngine = useRef(new SearchEngine(mockProducts));
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -39,6 +41,19 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setSearchHistory(searchEngine.current.getSearchHistory());
     setPopularSearches(searchEngine.current.getPopularSearches());
   }, []);
+
+  // Update suggestions when debounced query changes
+  useEffect(() => {
+    if (debouncedQuery.trim().length > 0 && showSuggestions) {
+      const newSuggestions = searchEngine.current.getSuggestions(debouncedQuery);
+      setSuggestions(newSuggestions);
+
+      // Announce to screen readers
+      announce(`${newSuggestions.length} suggestions available. Use arrow keys to navigate.`);
+    } else {
+      setSuggestions([]);
+    }
+  }, [debouncedQuery, showSuggestions, announce]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -56,17 +71,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setQuery(value);
     setSelectedIndex(-1);
 
+    // Show/hide dropdown immediately, but suggestions will update via debounced effect
     if (value.trim().length > 0 && showSuggestions) {
-      const newSuggestions = searchEngine.current.getSuggestions(value);
-      setSuggestions(newSuggestions);
       setShowDropdown(true);
-      
-      // Announce to screen readers
-      setTimeout(() => {
-        announce(`${newSuggestions.length} suggestions available. Use arrow keys to navigate.`);
-      }, 100);
     } else {
-      setSuggestions([]);
       setShowDropdown(value.trim().length === 0 && showSuggestions); // Show history when empty
     }
   };

@@ -111,14 +111,67 @@ export const PromoCodes: React.FC = () => {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['admin-promo-codes'] });
       queryClient.invalidateQueries({ queryKey: ['promo-code-stats'] });
-      toast.success(`Imported ${data.imported} promo codes. Skipped: ${data.skipped}`, {
-        description: data.errors.length > 0 ? `${data.errors.length} errors occurred` : undefined,
-      });
+
+      // Show detailed success/error messages
+      if (data.imported > 0) {
+        toast.success(`Successfully imported ${data.imported} promo code${data.imported !== 1 ? 's' : ''}`, {
+          description: data.skipped > 0
+            ? `Skipped ${data.skipped} duplicate${data.skipped !== 1 ? 's' : ''}. ${data.errors.length > 0 ? `${data.errors.length} error${data.errors.length !== 1 ? 's' : ''}.` : ''}`
+            : data.errors.length > 0
+            ? `${data.errors.length} error${data.errors.length !== 1 ? 's' : ''} occurred`
+            : undefined,
+          duration: 5000,
+        });
+      } else {
+        toast.warning('No promo codes were imported', {
+          description: data.skipped > 0
+            ? `All ${data.skipped} codes were duplicates`
+            : data.errors.length > 0
+            ? `${data.errors.length} validation error${data.errors.length !== 1 ? 's' : ''} found`
+            : 'No valid data to import',
+          duration: 5000,
+        });
+      }
+
+      // Show individual errors if any (up to 5)
+      if (data.errors && data.errors.length > 0) {
+        const errorSample = data.errors.slice(0, 5);
+        errorSample.forEach((error: { row: number; error: string }) => {
+          toast.error(`Row ${error.row}: ${error.error}`, {
+            duration: 8000,
+          });
+        });
+
+        if (data.errors.length > 5) {
+          toast.info(`${data.errors.length - 5} more errors not shown`, {
+            duration: 5000,
+          });
+        }
+      }
+
       setShowImportDialog(false);
       setImportFile(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to import promo codes');
+      console.error('Import error:', error);
+
+      // Check for specific error types
+      if (error.message?.includes('CSV')) {
+        toast.error('CSV parsing failed', {
+          description: error.message || 'The CSV file format is invalid. Please check the file and try again.',
+          duration: 8000,
+        });
+      } else if (error.message?.includes('header')) {
+        toast.error('Missing required columns', {
+          description: error.message || 'The CSV file is missing required columns. Download the template for the correct format.',
+          duration: 8000,
+        });
+      } else {
+        toast.error('Failed to import promo codes', {
+          description: error.message || 'An unexpected error occurred. Please try again.',
+          duration: 8000,
+        });
+      }
     },
   });
 

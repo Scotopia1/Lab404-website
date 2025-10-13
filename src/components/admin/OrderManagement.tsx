@@ -95,11 +95,18 @@ interface Order {
 interface OrderItem {
   id: string;
   product_id: string;
-  product_name: string;
+  product_name?: string;
   product_image?: string;
   quantity: number;
-  price: number;
-  total: number;
+  price?: number;
+  total?: number;
+  unit_price?: number;
+  total_price?: number;
+  product_snapshot?: {
+    name: string;
+    images?: string[];
+    [key: string]: any;
+  };
 }
 
 interface OrderFilters {
@@ -857,48 +864,55 @@ export const OrderManagement: React.FC = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewOrder(order)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleSendWhatsApp(order.id)}>
-                                <MessageCircle className="h-4 w-4 mr-2" />
-                                {order.whatsapp_sent ? 'Mark WhatsApp Sent' : 'Send WhatsApp'}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order.id, 'confirmed')}>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Mark Confirmed
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order.id, 'processing')}>
-                                <Package className="h-4 w-4 mr-2" />
-                                Mark Processing
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}>
-                                <Truck className="h-4 w-4 mr-2" />
-                                Mark Shipped
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order.id, 'delivered')}>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Mark Delivered
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleRefundOrder(order)}
-                                className="text-red-600"
-                              >
-                                <DollarSign className="h-4 w-4 mr-2" />
-                                Process Refund
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewOrder(order)}
+                              className="h-8 px-2"
+                              title="View order details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleSendWhatsApp(order.id)}>
+                                  <MessageCircle className="h-4 w-4 mr-2" />
+                                  {order.whatsapp_sent ? 'Mark WhatsApp Sent' : 'Send WhatsApp'}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order.id, 'confirmed')}>
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Mark Confirmed
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order.id, 'processing')}>
+                                  <Package className="h-4 w-4 mr-2" />
+                                  Mark Processing
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}>
+                                  <Truck className="h-4 w-4 mr-2" />
+                                  Mark Shipped
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order.id, 'delivered')}>
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Mark Delivered
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleRefundOrder(order)}
+                                  className="text-red-600"
+                                >
+                                  <DollarSign className="h-4 w-4 mr-2" />
+                                  Process Refund
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -1061,27 +1075,34 @@ export const OrderManagement: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {selectedOrder.items.map((item: OrderItem) => (
-                          <TableRow key={item.id}>
-                            <TableCell>
-                              <div className="flex items-center space-x-3">
-                                {item.product_image && (
-                                  <img
-                                    src={item.product_image}
-                                    alt={item.product_name}
-                                    className="h-10 w-10 rounded object-cover"
-                                  />
-                                )}
-                                <div>
-                                  <div className="font-medium">{item.product_name}</div>
+                        {selectedOrder.items.map((item: OrderItem) => {
+                          const productName = item.product_name || item.product_snapshot?.name || 'Unknown Product';
+                          const productImage = item.product_image || item.product_snapshot?.images?.[0];
+                          const unitPrice = item.price || item.unit_price || 0;
+                          const totalPrice = item.total || item.total_price || 0;
+
+                          return (
+                            <TableRow key={item.id}>
+                              <TableCell>
+                                <div className="flex items-center space-x-3">
+                                  {productImage && (
+                                    <img
+                                      src={productImage}
+                                      alt={productName}
+                                      className="h-10 w-10 rounded object-cover"
+                                    />
+                                  )}
+                                  <div>
+                                    <div className="font-medium">{productName}</div>
+                                  </div>
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{item.quantity}</TableCell>
-                            <TableCell>${item.price.toFixed(2)}</TableCell>
-                            <TableCell>${item.total.toFixed(2)}</TableCell>
-                          </TableRow>
-                        ))}
+                              </TableCell>
+                              <TableCell>{item.quantity}</TableCell>
+                              <TableCell>${unitPrice.toFixed(2)}</TableCell>
+                              <TableCell>${totalPrice.toFixed(2)}</TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>

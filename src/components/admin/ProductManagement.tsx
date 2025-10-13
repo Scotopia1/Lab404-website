@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -49,11 +50,13 @@ import {
   Link,
   Globe,
   ListChecks,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { apiClient } from '@/api/client';
 import { backendAuthService } from '@/lib/backendAuth';
 import { toast } from 'sonner';
 import { handleImageError, getFirstValidImage } from '@/lib/imageUtils';
+import { GoogleImageSearch } from '@/components/admin/GoogleImageSearch';
 
 // Interfaces
 interface Product {
@@ -78,6 +81,14 @@ interface Product {
   is_active: boolean;
   rating?: number;
   review_count?: number;
+  weight?: number;
+  dimensions?: any;
+  specifications?: any;
+  features?: string[];
+  meta_title?: string;
+  meta_description?: string;
+  requires_shipping?: boolean;
+  alibaba_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -110,12 +121,15 @@ export const ProductManagement: React.FC = () => {
   const navigate = useNavigate();
 
   // State management
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebounce(searchInput, 400); // Debounce search by 400ms
+
   const [filters, setFilters] = useState<ProductFilters>({
     search: '',
     sort_by: 'created_at',
     sort_order: 'desc',
     page: 1,
-    limit: 25,
+    limit: 10,
     include_inactive: false,
   });
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -124,6 +138,16 @@ export const ProductManagement: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showGoogleImageSearch, setShowGoogleImageSearch] = useState(false);
+
+  // Update filters when debounced search changes
+  useEffect(() => {
+    setFilters(prev => ({
+      ...prev,
+      search: debouncedSearch,
+      page: 1, // Reset to page 1 when search changes
+    }));
+  }, [debouncedSearch]);
 
   // Check URL path for /new route
   useEffect(() => {
@@ -268,9 +292,9 @@ export const ProductManagement: React.FC = () => {
 
   // Computed values
   const products = productsData?.data || [];
-  const totalProducts = productsData?.total || 0;
+  const totalProducts = productsData?.pagination?.total || 0;
   const currentPage = filters.page || 1;
-  const totalPages = Math.ceil(totalProducts / (filters.limit || 25));
+  const totalPages = Math.ceil(totalProducts / (filters.limit || 10));
 
   // Handlers
   const handleFilterChange = (key: keyof ProductFilters, value: any) => {
@@ -404,15 +428,15 @@ export const ProductManagement: React.FC = () => {
 
       // Upload each file to ImageKit
       const uploadPromises = Array.from(files).map(async (file) => {
-        const formData = new FormData();
-        formData.append('image', file);
+        const formDataUpload = new FormData();
+        formDataUpload.append('image', file);
 
         // Add product ID if editing existing product
         if (editingProduct?.id) {
-          formData.append('productId', editingProduct.id);
+          formDataUpload.append('productId', editingProduct.id);
         }
 
-        const response = await apiClient.uploadImage(formData);
+        const response = await apiClient.uploadImage(formDataUpload);
         return response.url; // Return the ImageKit URL
       });
 
@@ -446,6 +470,51 @@ export const ProductManagement: React.FC = () => {
       // Clear the file input on error
       event.target.value = '';
     }
+  };
+
+  const handleGoogleImagesSelected = async (imageUrls: string[]) => {
+    try {
+      // Show loading toast
+      const uploadingToast = toast.loading(`Downloading and uploading ${imageUrls.length} image${imageUrls.length > 1 ? 's' : ''}...`);
+
+      // Download images from Google and upload to ImageKit via backend
+      const response = await apiClient.post<{ results: Array<{ success: boolean; imagekitUrl?: string; error?: string }> }>(
+        '/admin/google-images/download',
+        {
+          imageUrls: imageUrls,
+          folder: editingProduct?.id ? `products/${editingProduct.id}` : 'products/temp'
+        }
+      );
+
+      // Filter successful uploads
+      const successfulUploads = response.results
+        .filter(r => r.success && r.imagekitUrl)
+        .map(r => r.imagekitUrl!);
+
+      if (successfulUploads.length > 0) {
+        // Update form data with ImageKit URLs
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, ...successfulUploads]
+        }));
+
+        // Dismiss loading toast and show success
+        toast.dismiss(uploadingToast);
+        toast.success(`Successfully added ${successfulUploads.length} image${successfulUploads.length > 1 ? 's' : ''}!`);
+      }
+
+      // Show warnings for failed uploads
+      const failures = response.results.filter(r => !r.success);
+      if (failures.length > 0) {
+        toast.warning(`${failures.length} image${failures.length > 1 ? 's' : ''} failed to upload`);
+      }
+    } catch (error: any) {
+      console.error('Error downloading Google images:', error);
+      toast.error('Failed to download images from Google. Please try again.');
+    }
+
+    // Close the dialog
+    setShowGoogleImageSearch(false);
   };
 
   const removeImage = (index: number) => {
@@ -624,7 +693,6 @@ export const ProductManagement: React.FC = () => {
         unit: 'cm'
       },
       category_id: product.category_id || '',
-      category: product.category || '', // Include category name
       tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
       images: Array.isArray(product.images) ? product.images : [], // Ensure images is an array
       specifications: product.specifications && typeof product.specifications === 'object'
@@ -661,6 +729,243 @@ export const ProductManagement: React.FC = () => {
     }
     return <Badge variant="outline" className="border-green-500 text-green-600">In Stock</Badge>;
   };
+
+  // Product Form Dialog Content
+  const ProductFormContent = () => (
+    <div className="max-h-[70vh] overflow-y-auto px-1">
+      <div className="space-y-4">
+        {/* Basic Information */}
+        <div>
+          <Label htmlFor="name">Product Name *</Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) => handleFormChange('name', e.target.value)}
+            placeholder="Enter product name"
+          />
+          {formErrors.name && <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>}
+        </div>
+
+        <div>
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            value={formData.description}
+            onChange={(e) => handleFormChange('description', e.target.value)}
+            placeholder="Enter product description"
+            rows={3}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <Label htmlFor="price">Price *</Label>
+            <Input
+              id="price"
+              type="number"
+              step="0.01"
+              value={formData.price}
+              onChange={(e) => handleFormChange('price', e.target.value)}
+              placeholder="0.00"
+            />
+            {formErrors.price && <p className="text-sm text-red-500 mt-1">{formErrors.price}</p>}
+          </div>
+          <div>
+            <Label htmlFor="compare_at_price">Compare Price</Label>
+            <Input
+              id="compare_at_price"
+              type="number"
+              step="0.01"
+              value={formData.compare_at_price}
+              onChange={(e) => handleFormChange('compare_at_price', e.target.value)}
+              placeholder="0.00"
+            />
+          </div>
+          <div>
+            <Label htmlFor="cost_price">Cost Price</Label>
+            <Input
+              id="cost_price"
+              type="number"
+              step="0.01"
+              value={formData.cost_price}
+              onChange={(e) => handleFormChange('cost_price', e.target.value)}
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="category_id">Category *</Label>
+          <Select value={formData.category_id} onValueChange={(value) => handleFormChange('category_id', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories?.map((category: any) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {formErrors.category_id && <p className="text-sm text-red-500 mt-1">{formErrors.category_id}</p>}
+        </div>
+
+        {/* Product Images */}
+        <div>
+          <Label>Product Images</Label>
+          <div className="space-y-3 mt-2">
+            {formData.images.length > 0 && (
+              <div className="grid grid-cols-4 gap-3">
+                {formData.images.map((image, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={image}
+                      alt={`Product ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeImage(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('image-upload')?.click()}
+                className="flex-1"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Images
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowGoogleImageSearch(true)}
+                className="flex-1"
+              >
+                <ImageIcon className="h-4 w-4 mr-2" />
+                Search Google Images
+              </Button>
+            </div>
+            <input
+              id="image-upload"
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+          </div>
+        </div>
+
+        {/* Tags */}
+        <div>
+          <Label htmlFor="tags">Tags (comma separated)</Label>
+          <Input
+            id="tags"
+            value={formData.tags}
+            onChange={(e) => handleFormChange('tags', e.target.value)}
+            placeholder="electronics, arduino, sensors"
+          />
+        </div>
+
+        {/* SEO Section */}
+        <div className="space-y-3 pt-3 border-t">
+          <h3 className="text-sm font-semibold text-gray-700">SEO Settings</h3>
+          <div>
+            <Label htmlFor="meta_title">Meta Title</Label>
+            <Input
+              id="meta_title"
+              value={formData.meta_title}
+              onChange={(e) => handleFormChange('meta_title', e.target.value)}
+              placeholder="SEO title for search engines (60 chars max)"
+              maxLength={60}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {formData.meta_title.length}/60 characters
+            </p>
+            {formErrors.meta_title && <p className="text-sm text-red-500 mt-1">{formErrors.meta_title}</p>}
+          </div>
+          <div>
+            <Label htmlFor="meta_description">Meta Description</Label>
+            <Textarea
+              id="meta_description"
+              value={formData.meta_description}
+              onChange={(e) => handleFormChange('meta_description', e.target.value)}
+              placeholder="SEO description for search engines (160 chars max)"
+              rows={3}
+              maxLength={160}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {formData.meta_description.length}/160 characters
+            </p>
+            {formErrors.meta_description && <p className="text-sm text-red-500 mt-1">{formErrors.meta_description}</p>}
+          </div>
+        </div>
+
+        {/* Inventory */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="stock_quantity">Stock Quantity</Label>
+            <Input
+              id="stock_quantity"
+              type="number"
+              value={formData.stock_quantity}
+              onChange={(e) => handleFormChange('stock_quantity', e.target.value)}
+              placeholder="0"
+              disabled={formData.unlimited_stock}
+            />
+          </div>
+          <div className="flex items-center space-x-2 mt-8">
+            <Switch
+              id="track_inventory"
+              checked={formData.track_inventory}
+              onCheckedChange={(checked) => handleFormChange('track_inventory', checked)}
+            />
+            <Label htmlFor="track_inventory">Track Inventory</Label>
+          </div>
+        </div>
+
+        {/* Status Switches */}
+        <div className="space-y-3 pt-3 border-t">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="featured">Featured Product</Label>
+            <Switch
+              id="featured"
+              checked={formData.featured}
+              onCheckedChange={(checked) => handleFormChange('featured', checked)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="is_active">Active</Label>
+            <Switch
+              id="is_active"
+              checked={formData.is_active}
+              onCheckedChange={(checked) => handleFormChange('is_active', checked)}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="in_stock">In Stock</Label>
+            <Switch
+              id="in_stock"
+              checked={formData.in_stock}
+              onCheckedChange={(checked) => handleFormChange('in_stock', checked)}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -815,10 +1120,15 @@ export const ProductManagement: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search products..."
-                value={filters.search || ''}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="pl-10"
               />
+              {searchInput && searchInput !== debouncedSearch && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
             </div>
             <Select
               value={filters.sort_by || 'created_at'}
@@ -1051,12 +1361,12 @@ export const ProductManagement: React.FC = () => {
                       <TableCell colSpan={8} className="text-center py-8">
                         <Package className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                         <p className="text-gray-500">No products found</p>
-                        {filters.search && (
+                        {searchInput && (
                           <Button
                             variant="outline"
                             size="sm"
                             className="mt-2"
-                            onClick={() => handleFilterChange('search', '')}
+                            onClick={() => setSearchInput('')}
                           >
                             Clear search
                           </Button>
@@ -1179,12 +1489,12 @@ export const ProductManagement: React.FC = () => {
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-500">
-                Showing {Math.min(totalProducts, (currentPage - 1) * (filters.limit || 25) + 1)} to {Math.min(currentPage * (filters.limit || 25), totalProducts)} of {totalProducts} products
+                Showing {totalProducts === 0 ? 0 : (currentPage - 1) * (filters.limit || 10) + 1} to {Math.min(currentPage * (filters.limit || 10), totalProducts)} of {totalProducts} products
               </div>
               <div className="flex items-center space-x-2">
                 <Label className="text-sm text-gray-600">Per page:</Label>
                 <Select
-                  value={filters.limit?.toString() || '25'}
+                  value={filters.limit?.toString() || '10'}
                   onValueChange={(value) => handleFilterChange('limit', parseInt(value))}
                 >
                   <SelectTrigger className="w-20 h-8">
@@ -1199,51 +1509,102 @@ export const ProductManagement: React.FC = () => {
                 </Select>
               </div>
             </div>
-            {totalPages > 1 && (
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleFilterChange('page', 1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleFilterChange('page', currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-sm px-2">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleFilterChange('page', currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleFilterChange('page', totalPages)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleFilterChange('page', 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleFilterChange('page', currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm px-2">
+                Page {currentPage} of {totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleFilterChange('page', currentPage + 1)}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleFilterChange('page', totalPages)}
+                disabled={currentPage === totalPages || totalPages === 0}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Create/Edit Product Dialogs remain the same - truncated for brevity */}
-      {/* ... rest of the component with form dialogs ... */}
+      {/* Create Product Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Create New Product</DialogTitle>
+            <DialogDescription>
+              Add a new product to your catalog
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitProduct}>
+            <ProductFormContent />
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Creating...' : 'Create Product'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>
+              Update product information
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitProduct}>
+            <ProductFormContent />
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Updating...' : 'Update Product'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Google Image Search Dialog */}
+      <GoogleImageSearch
+        open={showGoogleImageSearch}
+        onOpenChange={setShowGoogleImageSearch}
+        onSelectImages={handleGoogleImagesSelected}
+        multiSelect={true}
+        maxSelections={10}
+        initialQuery={formData.name}
+      />
     </div>
   );
 };
