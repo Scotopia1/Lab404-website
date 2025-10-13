@@ -14,6 +14,30 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 
+// Country codes for phone numbers
+const countryCodes = [
+  { value: '+961', label: '🇱🇧 Lebanon (+961)', country: 'Lebanon' },
+  { value: '+1', label: '🇺🇸 USA (+1)', country: 'USA' },
+  { value: '+44', label: '🇬🇧 UK (+44)', country: 'UK' },
+  { value: '+971', label: '🇦🇪 UAE (+971)', country: 'UAE' },
+  { value: '+966', label: '🇸🇦 Saudi Arabia (+966)', country: 'Saudi Arabia' },
+  { value: '+20', label: '🇪🇬 Egypt (+20)', country: 'Egypt' },
+  { value: '+962', label: '🇯🇴 Jordan (+962)', country: 'Jordan' },
+  { value: '+33', label: '🇫🇷 France (+33)', country: 'France' },
+  { value: '+49', label: '🇩🇪 Germany (+49)', country: 'Germany' },
+  { value: '+90', label: '🇹🇷 Turkey (+90)', country: 'Turkey' },
+  { value: '+91', label: '🇮🇳 India (+91)', country: 'India' },
+  { value: '+86', label: '🇨🇳 China (+86)', country: 'China' },
+  { value: '+81', label: '🇯🇵 Japan (+81)', country: 'Japan' },
+  { value: '+82', label: '🇰🇷 South Korea (+82)', country: 'South Korea' },
+  { value: '+61', label: '🇦🇺 Australia (+61)', country: 'Australia' },
+  { value: '+64', label: '🇳🇿 New Zealand (+64)', country: 'New Zealand' },
+  { value: '+55', label: '🇧🇷 Brazil (+55)', country: 'Brazil' },
+  { value: '+52', label: '🇲🇽 Mexico (+52)', country: 'Mexico' },
+  { value: '+39', label: '🇮🇹 Italy (+39)', country: 'Italy' },
+  { value: '+34', label: '🇪🇸 Spain (+34)', country: 'Spain' },
+];
+
 // Lebanese regions and cities
 const lebanonRegions = [
   { value: 'beirut', label: 'Beirut' },
@@ -24,38 +48,25 @@ const lebanonRegions = [
   { value: 'nabatieh', label: 'Nabatieh' }
 ];
 
-// Helper function to format phone number
-const formatPhoneNumber = (phone: string): string => {
-  // Remove all non-numeric and non-plus characters
-  let cleaned = phone.replace(/[^\d+]/g, '');
+// Helper function to format phone number with country code
+const formatPhoneNumber = (countryCode: string, phoneNumber: string): string => {
+  // Remove all non-numeric characters from phone number
+  let cleaned = phoneNumber.replace(/\D/g, '');
   
-  // If it starts with +, keep it
-  if (cleaned.startsWith('+')) {
-    return cleaned;
-  }
-  
-  // If it starts with 961 (Lebanon code), add +
-  if (cleaned.startsWith('961')) {
-    return '+' + cleaned;
-  }
-  
-  // If it starts with 0, replace with +961
+  // If phone starts with 0, remove it
   if (cleaned.startsWith('0')) {
-    return '+961' + cleaned.substring(1);
+    cleaned = cleaned.substring(1);
   }
   
-  // If it's just digits, add +961 (default Lebanon)
-  if (cleaned.match(/^\d+$/)) {
-    return '+961' + cleaned;
-  }
-  
-  return cleaned;
+  // Combine country code + cleaned number
+  return countryCode + cleaned;
 };
 
 // Form validation schema
 const checkoutSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  mobile: z.string().min(8, 'Please enter a valid mobile number'),
+  countryCode: z.string().min(1, 'Please select country code'),
+  mobile: z.string().min(6, 'Please enter a valid mobile number').regex(/^[0-9]+$/, 'Only numbers are allowed'),
   email: z.string().email('Please enter a valid email address'),
   region: z.string().min(1, 'Please select your delivery region'),
   address: z.string().min(10, 'Please enter your complete address'),
@@ -75,6 +86,7 @@ export default function Checkout() {
   // Form state
   const [formData, setFormData] = useState<CheckoutFormData>({
     name: '',
+    countryCode: '+961', // Default to Lebanon
     mobile: '',
     email: '',
     region: '',
@@ -189,8 +201,8 @@ export default function Checkout() {
       // Convert region to proper label
       const regionLabel = lebanonRegions.find(r => r.value === formData.region)?.label || 'Lebanon';
 
-      // Format phone number for API
-      const formattedPhone = formatPhoneNumber(formData.mobile);
+      // Format phone number for API (combine country code + number)
+      const formattedPhone = formatPhoneNumber(formData.countryCode, formData.mobile);
 
       const orderData: any = {
         payment_method: formData.paymentMethod,
@@ -307,31 +319,59 @@ export default function Checkout() {
             </div>
 
             <div className="space-y-6">
-              {/* Name and Mobile */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name" className="text-sm font-medium text-blue-700">Full Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className={cn("mt-1", errors.name && "border-red-300")}
-                    placeholder="Enter your full name"
-                  />
-                  {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+              {/* Name */}
+              <div>
+                <Label htmlFor="name" className="text-sm font-medium text-blue-700">Full Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className={cn("mt-1", errors.name && "border-red-300")}
+                  placeholder="Enter your full name"
+                />
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+              </div>
+
+              {/* Mobile Number - Split into Country Code and Number */}
+              <div>
+                <Label className="text-sm font-medium text-blue-700">Mobile Number *</Label>
+                <div className="grid grid-cols-12 gap-2 mt-1">
+                  {/* Country Code Dropdown */}
+                  <div className="col-span-5">
+                    <Select
+                      value={formData.countryCode}
+                      onValueChange={(value) => handleInputChange('countryCode', value)}
+                    >
+                      <SelectTrigger className={cn(errors.countryCode && "border-red-300")}>
+                        <SelectValue placeholder="Code" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countryCodes.map((country) => (
+                          <SelectItem key={country.value} value={country.value}>
+                            {country.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Phone Number Input */}
+                  <div className="col-span-7">
+                    <Input
+                      id="mobile"
+                      type="tel"
+                      value={formData.mobile}
+                      onChange={(e) => handleInputChange('mobile', e.target.value)}
+                      className={cn(errors.mobile && "border-red-300")}
+                      placeholder="76666341"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="mobile" className="text-sm font-medium text-blue-700">Mobile Number *</Label>
-                  <Input
-                    id="mobile"
-                    value={formData.mobile}
-                    onChange={(e) => handleInputChange('mobile', e.target.value)}
-                    className={cn("mt-1", errors.mobile && "border-red-300")}
-                    placeholder="+96176666341 or 76666341"
-                  />
-                  {errors.mobile && <p className="mt-1 text-sm text-red-600">{errors.mobile}</p>}
-                  {!errors.mobile && <p className="mt-1 text-xs text-blue-600">Enter your phone number (will be auto-formatted)</p>}
-                </div>
+                {errors.countryCode && <p className="mt-1 text-sm text-red-600">{errors.countryCode}</p>}
+                {errors.mobile && <p className="mt-1 text-sm text-red-600">{errors.mobile}</p>}
+                {!errors.mobile && !errors.countryCode && (
+                  <p className="mt-1 text-xs text-blue-600">Enter your phone number without country code</p>
+                )}
               </div>
 
               {/* Email and Region */}
