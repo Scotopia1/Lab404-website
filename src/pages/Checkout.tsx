@@ -204,6 +204,11 @@ export default function Checkout() {
       // Format phone number for API (combine country code + number)
       const formattedPhone = formatPhoneNumber(formData.countryCode, formData.mobile);
 
+      // Split name into first and last (handle single-word names)
+      const nameParts = formData.name.trim().split(' ');
+      const firstName = nameParts[0] || formData.name;
+      const lastName = nameParts.slice(1).join(' ') || ''; // Empty string for single-word names
+
       const orderData: any = {
         payment_method: formData.paymentMethod,
         guest_email: formData.email,
@@ -215,8 +220,8 @@ export default function Checkout() {
           unit_price: item.price,
         })),
         shipping_address: {
-          first_name: formData.name.split(' ')[0] || formData.name,
-          last_name: formData.name.split(' ').slice(1).join(' ') || '',
+          first_name: firstName,
+          last_name: lastName,
           address_line_1: formData.address,
           city: regionLabel,
           postal_code: '00000', // Default for Lebanon
