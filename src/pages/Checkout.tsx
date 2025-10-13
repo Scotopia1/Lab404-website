@@ -24,10 +24,38 @@ const lebanonRegions = [
   { value: 'nabatieh', label: 'Nabatieh' }
 ];
 
+// Helper function to format phone number
+const formatPhoneNumber = (phone: string): string => {
+  // Remove all non-numeric and non-plus characters
+  let cleaned = phone.replace(/[^\d+]/g, '');
+  
+  // If it starts with +, keep it
+  if (cleaned.startsWith('+')) {
+    return cleaned;
+  }
+  
+  // If it starts with 961 (Lebanon code), add +
+  if (cleaned.startsWith('961')) {
+    return '+' + cleaned;
+  }
+  
+  // If it starts with 0, replace with +961
+  if (cleaned.startsWith('0')) {
+    return '+961' + cleaned.substring(1);
+  }
+  
+  // If it's just digits, add +961 (default Lebanon)
+  if (cleaned.match(/^\d+$/)) {
+    return '+961' + cleaned;
+  }
+  
+  return cleaned;
+};
+
 // Form validation schema
 const checkoutSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  mobile: z.string().regex(/^\+[1-9]\d{1,14}$/, 'Please enter a valid mobile number with country code (e.g., +96176666341)'),
+  mobile: z.string().min(8, 'Please enter a valid mobile number'),
   email: z.string().email('Please enter a valid email address'),
   region: z.string().min(1, 'Please select your delivery region'),
   address: z.string().min(10, 'Please enter your complete address'),
@@ -161,11 +189,14 @@ export default function Checkout() {
       // Convert region to proper label
       const regionLabel = lebanonRegions.find(r => r.value === formData.region)?.label || 'Lebanon';
 
-      const orderData = {
+      // Format phone number for API
+      const formattedPhone = formatPhoneNumber(formData.mobile);
+
+      const orderData: any = {
         payment_method: formData.paymentMethod,
         guest_email: formData.email,
         guest_name: formData.name,
-        guest_phone: formData.mobile,
+        guest_phone: formattedPhone,
         items: items.map(item => ({
           product_id: item.productId,
           quantity: item.quantity,
@@ -178,12 +209,22 @@ export default function Checkout() {
           city: regionLabel,
           postal_code: '00000', // Default for Lebanon
           country: 'Lebanon',
-          phone: formData.mobile,
+          phone: formattedPhone,
         },
-        notes: formData.note || '',
         currency: 'USD',
-        promo_code: promoCodeApplied?.code || undefined,
       };
+
+      // Only add optional fields if they have values
+      if (formData.note && formData.note.trim()) {
+        orderData.notes = formData.note.trim();
+      }
+
+      // Only add promo_code if one is applied
+      if (promoCodeApplied?.code) {
+        orderData.promo_code = promoCodeApplied.code;
+      }
+
+      console.log('Submitting order with data:', JSON.stringify(orderData, null, 2));
 
       const response = await apiClient.post('/orders', orderData);
 
@@ -204,9 +245,28 @@ export default function Checkout() {
       } else {
         throw new Error('Invalid response from server');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error placing order:', error);
-      toast.error('Failed to place order. Please try again.');
+      
+      // Log detailed error information
+      if (error.response) {
+        console.error('API Error Response:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+        
+        // Show specific error message if available
+        const errorMessage = error.response.data?.message || error.response.data?.error || 'Failed to place order';
+        toast.error(errorMessage, {
+          description: error.response.data?.details ? JSON.stringify(error.response.data.details) : 'Please check your information and try again.'
+        });
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+        toast.error('Network error. Please check your connection and try again.');
+      } else {
+        toast.error('Failed to place order. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -267,9 +327,10 @@ export default function Checkout() {
                     value={formData.mobile}
                     onChange={(e) => handleInputChange('mobile', e.target.value)}
                     className={cn("mt-1", errors.mobile && "border-red-300")}
-                    placeholder="+96176666341"
+                    placeholder="+96176666341 or 76666341"
                   />
                   {errors.mobile && <p className="mt-1 text-sm text-red-600">{errors.mobile}</p>}
+                  {!errors.mobile && <p className="mt-1 text-xs text-blue-600">Enter your phone number (will be auto-formatted)</p>}
                 </div>
               </div>
 

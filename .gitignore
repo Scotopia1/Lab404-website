@@ -81,7 +81,13 @@ dist
 
 # Gatsby files
 .cache/
-public
+# Note: public folder typically ignored for Gatsby, but for Vite we need PWA icons
+# Uncomment below if you want to ignore public folder entirely
+# public
+
+# Allow specific PWA icon files to be tracked
+!public/pwa-*.png
+!public/maskable-icon-*.png
 
 # Storybook build outputs
 .out
