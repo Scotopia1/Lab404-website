@@ -131,22 +131,52 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
       const params: Record<string, any> = {
         query: debouncedQuery,
         limit,
-        start: offset,
+        start: offset + 1, // Backend uses 1-based indexing
         imageSize: filters.imageSize,
         imageType: filters.imageType,
-        safeSearch: filters.safeSearch,
+        safeSearch: filters.safeSearch === 'active' ? 'medium' : 'off',
       };
 
       if (filters.fileType) {
         params.fileType = filters.fileType;
       }
 
-      const response = await apiClient.get<{ data: GoogleImageSearchResponse }>(
-        '/admin/google-images/search',
-        params
-      );
+      // Call the backend API
+      const response = await apiClient.searchGoogleImages(params);
 
-      return response.data;
+      // Transform backend response to component format
+      return {
+        images: response.results.map((item: any) => ({
+          url: item.link,
+          thumbnailUrl: item.thumbnail || item.image?.thumbnailLink || item.link,
+          title: item.title,
+          width: item.image?.width || 0,
+          height: item.image?.height || 0,
+          size: item.image?.byteSize || 0,
+          fileType: item.mime?.split('/')[1] || 'unknown',
+          contextUrl: item.image?.contextLink || item.displayLink,
+          source: item.displayLink,
+          aspectRatio: item.image?.width && item.image?.height 
+            ? `${item.image.width}:${item.image.height}` 
+            : '1:1',
+          displaySize: item.image?.width && item.image?.height
+            ? `${item.image.width}x${item.image.height}`
+            : 'Unknown',
+        })),
+        pagination: {
+          total: parseInt(response.totalResults) || 0,
+          limit: response.pagination.limit,
+          offset: response.pagination.start - 1,
+          page: Math.floor((response.pagination.start - 1) / response.pagination.limit) + 1,
+          totalPages: Math.ceil(parseInt(response.totalResults) / response.pagination.limit),
+          hasMore: response.pagination.hasNextPage,
+        },
+        searchInfo: {
+          query: response.query,
+          searchTime: response.searchTime,
+          totalResults: parseInt(response.totalResults) || 0,
+        },
+      };
     },
     enabled: !!debouncedQuery && debouncedQuery.length >= 2,
     keepPreviousData: true,
@@ -312,7 +342,7 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Format</Label>
               <Select
-                value={filters.fileType}
+                value={filters.fileType || undefined}
                 onValueChange={(value: any) =>
                   setFilters((prev) => ({ ...prev, fileType: value }))
                 }
@@ -321,7 +351,6 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
                   <SelectValue placeholder="All formats" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All formats</SelectItem>
                   <SelectItem value="jpg">JPG</SelectItem>
                   <SelectItem value="png">PNG</SelectItem>
                   <SelectItem value="gif">GIF</SelectItem>

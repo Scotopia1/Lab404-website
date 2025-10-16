@@ -478,13 +478,8 @@ export const ProductManagement: React.FC = () => {
       const uploadingToast = toast.loading(`Downloading and uploading ${imageUrls.length} image${imageUrls.length > 1 ? 's' : ''}...`);
 
       // Download images from Google and upload to ImageKit via backend
-      const response = await apiClient.post<{ results: Array<{ success: boolean; imagekitUrl?: string; error?: string }> }>(
-        '/admin/google-images/download',
-        {
-          imageUrls: imageUrls,
-          folder: editingProduct?.id ? `products/${editingProduct.id}` : 'products/temp'
-        }
-      );
+      const folder = editingProduct?.id ? `products/${editingProduct.id}` : 'products';
+      const response = await apiClient.downloadGoogleImagesBatch(imageUrls, folder);
 
       // Filter successful uploads
       const successfulUploads = response.results
@@ -506,6 +501,7 @@ export const ProductManagement: React.FC = () => {
       // Show warnings for failed uploads
       const failures = response.results.filter(r => !r.success);
       if (failures.length > 0) {
+        toast.dismiss(uploadingToast);
         toast.warning(`${failures.length} image${failures.length > 1 ? 's' : ''} failed to upload`);
       }
     } catch (error: any) {

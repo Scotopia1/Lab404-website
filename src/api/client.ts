@@ -1421,6 +1421,80 @@ class ApiClient {
   }> {
     return this.post('/admin/promo-codes/import', { csvData });
   }
+
+  // ============================================
+  // Google Images API Methods
+  // ============================================
+
+  /**
+   * Search Google Images with filters
+   */
+  async searchGoogleImages(params: {
+    query: string;
+    limit?: number;
+    start?: number;
+    safeSearch?: 'off' | 'medium' | 'high';
+    imageSize?: 'huge' | 'icon' | 'large' | 'medium' | 'small' | 'xlarge' | 'xxlarge';
+    imageType?: 'clipart' | 'face' | 'lineart' | 'stock' | 'photo' | 'animated';
+    fileType?: 'jpg' | 'png' | 'gif' | 'bmp' | 'svg' | 'webp' | 'ico';
+    imgColorType?: 'color' | 'gray' | 'mono' | 'trans';
+    imgDominantColor?: 'black' | 'blue' | 'brown' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'white' | 'yellow';
+  }): Promise<any> {
+    return this.get('/admin/google-images/search', params);
+  }
+
+  /**
+   * Download single image from URL and upload to ImageKit
+   */
+  async downloadGoogleImage(
+    imageUrl: string,
+    fileName?: string,
+    folder?: string
+  ): Promise<{
+    success: boolean;
+    originalUrl: string;
+    imagekitUrl?: string;
+    imagekitFileId?: string;
+    error?: string;
+    metadata?: {
+      width: number;
+      height: number;
+      size: number;
+      format: string;
+    };
+  }> {
+    return this.post('/admin/google-images/download', {
+      imageUrl,
+      fileName,
+      folder: folder || 'google-images',
+    });
+  }
+
+  /**
+   * Download multiple images in batch and upload to ImageKit
+   */
+  async downloadGoogleImagesBatch(
+    imageUrls: string[],
+    folder?: string
+  ): Promise<{
+    results: Array<{
+      success: boolean;
+      originalUrl: string;
+      imagekitUrl?: string;
+      imagekitFileId?: string;
+      error?: string;
+    }>;
+    summary: {
+      total: number;
+      success: number;
+      failed: number;
+    };
+  }> {
+    return this.post('/admin/google-images/download', {
+      imageUrls,
+      folder: folder || 'google-images',
+    });
+  }
 }
 
 // Export singleton instance
