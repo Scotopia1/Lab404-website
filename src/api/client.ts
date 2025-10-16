@@ -698,11 +698,25 @@ class ApiClient {
     }));
   }
 
-  async searchProducts(query: string, filters?: any): Promise<PaginatedResponse<Product>> {
-    const response = await this.get('/products/search', { q: query, ...filters });
-    // Convert numeric fields to ensure they're numbers
-    if (response.data) {
-      response.data = response.data.map((product: any) => ({
+  async searchProducts(query: string, filters?: any): Promise<{
+    hits: Product[];
+    total: number;
+    processingTimeMs: number;
+    facets?: any;
+  }> {
+    const response = await this.post('/search', {
+      q: query,
+      filters: filters || {},
+      limit: filters?.limit || 20,
+      offset: filters?.offset || 0,
+      sort_by: filters?.sort_by,
+      sort_order: filters?.sort_order,
+      facets: filters?.facets || ['category', 'brand', 'in_stock'],
+    });
+    
+    // Convert numeric fields in hits to ensure they're numbers
+    if (response.hits) {
+      response.hits = response.hits.map((product: any) => ({
         ...product,
         price: Number(product.price || 0),
         compare_at_price: product.compare_at_price ? Number(product.compare_at_price) : null,
@@ -714,7 +728,18 @@ class ApiClient {
         review_count: Number(product.review_count || 0),
       }));
     }
-    return response;
+    
+    return {
+      hits: response.hits || [],
+      total: response.total || 0,
+      processingTimeMs: response.processingTimeMs || 0,
+      facets: response.facets,
+    };
+  }
+
+  async getSuggestions(query: string, limit: number = 5): Promise<any[]> {
+    const response = await this.get('/search/suggestions', { q: query, limit });
+    return response.suggestions || [];
   }
 
   async createProduct(productData: any): Promise<Product> {

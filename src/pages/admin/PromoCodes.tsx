@@ -30,6 +30,7 @@ import {
 import { apiClient } from '@/api/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { PromoCodeImport } from '@/components/admin/PromoCodeImport';
 
 interface PromoCode {
   id: string;
@@ -64,7 +65,6 @@ export const PromoCodes: React.FC = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingPromoCode, setDeletingPromoCode] = useState<PromoCode | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [importFile, setImportFile] = useState<File | null>(null);
 
   // Fetch promo codes
   const { data: promoCodesData, isLoading, refetch } = useQuery({
@@ -102,129 +102,10 @@ export const PromoCodes: React.FC = () => {
     },
   });
 
-  // Import mutation
-  const importMutation = useMutation({
-    mutationFn: async (csvData: string) => {
-      const response = await apiClient.post('/admin/promo-codes/import', { csvData });
-      return response;
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-promo-codes'] });
-      queryClient.invalidateQueries({ queryKey: ['promo-code-stats'] });
-
-      // Show detailed success/error messages
-      if (data.imported > 0) {
-        toast.success(`Successfully imported ${data.imported} promo code${data.imported !== 1 ? 's' : ''}`, {
-          description: data.skipped > 0
-            ? `Skipped ${data.skipped} duplicate${data.skipped !== 1 ? 's' : ''}. ${data.errors.length > 0 ? `${data.errors.length} error${data.errors.length !== 1 ? 's' : ''}.` : ''}`
-            : data.errors.length > 0
-            ? `${data.errors.length} error${data.errors.length !== 1 ? 's' : ''} occurred`
-            : undefined,
-          duration: 5000,
-        });
-      } else {
-        toast.warning('No promo codes were imported', {
-          description: data.skipped > 0
-            ? `All ${data.skipped} codes were duplicates`
-            : data.errors.length > 0
-            ? `${data.errors.length} validation error${data.errors.length !== 1 ? 's' : ''} found`
-            : 'No valid data to import',
-          duration: 5000,
-        });
-      }
-
-      // Show individual errors if any (up to 5)
-      if (data.errors && data.errors.length > 0) {
-        const errorSample = data.errors.slice(0, 5);
-        errorSample.forEach((error: { row: number; error: string }) => {
-          toast.error(`Row ${error.row}: ${error.error}`, {
-            duration: 8000,
-          });
-        });
-
-        if (data.errors.length > 5) {
-          toast.info(`${data.errors.length - 5} more errors not shown`, {
-            duration: 5000,
-          });
-        }
-      }
-
-      setShowImportDialog(false);
-      setImportFile(null);
-    },
-    onError: (error: any) => {
-      console.error('Import error:', error);
-
-      // Check for specific error types
-      if (error.message?.includes('CSV')) {
-        toast.error('CSV parsing failed', {
-          description: error.message || 'The CSV file format is invalid. Please check the file and try again.',
-          duration: 8000,
-        });
-      } else if (error.message?.includes('header')) {
-        toast.error('Missing required columns', {
-          description: error.message || 'The CSV file is missing required columns. Download the template for the correct format.',
-          duration: 8000,
-        });
-      } else {
-        toast.error('Failed to import promo codes', {
-          description: error.message || 'An unexpected error occurred. Please try again.',
-          duration: 8000,
-        });
-      }
-    },
-  });
-
-  // Handle file import
-  const handleImportFile = async () => {
-    if (!importFile) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const csvData = e.target?.result as string;
-      importMutation.mutate(csvData);
-    };
-    reader.readAsText(importFile);
-  };
-
-  // Download template
-  const handleDownloadTemplate = async () => {
-    try {
-      const response = await apiClient.get('/admin/promo-codes/template');
-      const csvText = typeof response === 'string' ? response : response.data;
-      const blob = new Blob([csvText], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'promo-codes-template.csv';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Template downloaded successfully');
-    } catch (error) {
-      toast.error('Failed to download template');
-    }
-  };
-
-  // Export promo codes
-  const handleExport = async () => {
-    try {
-      const response = await apiClient.get('/admin/promo-codes/export');
-      const csvText = typeof response === 'string' ? response : response.data;
-      const blob = new Blob([csvText], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `promo-codes-export-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Promo codes exported successfully');
-    } catch (error) {
-      toast.error('Failed to export promo codes');
-    }
+  // Handle import completion
+  const handleImportComplete = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-promo-codes'] });
+    queryClient.invalidateQueries({ queryKey: ['promo-code-stats'] });
   };
 
   const promoCodes = promoCodesData?.data || [];
@@ -253,27 +134,11 @@ export const PromoCodes: React.FC = () => {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={handleDownloadTemplate}
-            className="gap-2"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Template
-          </Button>
-          <Button
-            variant="outline"
             onClick={() => setShowImportDialog(true)}
             className="gap-2"
           >
             <Upload className="h-4 w-4" />
-            Import
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            className="gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export
+            Import/Export
           </Button>
           <Button onClick={() => window.location.href = '/admin/promo-codes/new'} className="gap-2">
             <Plus className="h-4 w-4" />
@@ -520,41 +385,12 @@ export const PromoCodes: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Import Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Promo Codes</DialogTitle>
-            <DialogDescription>
-              Upload a CSV file to import multiple promo codes at once.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>CSV File</Label>
-              <Input
-                type="file"
-                accept=".csv"
-                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-              />
-              <p className="text-xs text-gray-500">
-                Download the template to see the required format
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowImportDialog(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleImportFile}
-              disabled={!importFile || importMutation.isPending}
-            >
-              {importMutation.isPending ? 'Importing...' : 'Import'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Import/Export Dialog */}
+      <PromoCodeImport
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   );
 };
