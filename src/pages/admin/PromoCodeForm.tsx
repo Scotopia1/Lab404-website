@@ -55,7 +55,7 @@ export const PromoCodeForm: React.FC = () => {
     queryFn: async () => {
       if (!id) return null;
       const response = await apiClient.get(`/admin/promo-codes/${id}`);
-      return response.data;
+      return response;
     },
     enabled: isEditing,
   });
