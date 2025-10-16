@@ -476,12 +476,12 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
                         transition={{ duration: 0.2 }}
                         className="group relative"
                       >
-                        <button
+                        <div
                           onClick={() => handleToggleImage(image.url)}
                           onMouseEnter={() => setHoveredImage(image.url)}
                           onMouseLeave={() => setHoveredImage(null)}
                           className={cn(
-                            'relative w-full aspect-square rounded-lg overflow-hidden border-2 transition-all',
+                            'relative w-full aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-pointer',
                             isSelected
                               ? 'border-primary ring-2 ring-primary ring-offset-2'
                               : 'border-transparent hover:border-muted-foreground/20'
@@ -519,7 +519,7 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
                               <Copy className="h-4 w-4" />
                             </Button>
                           )}
-                        </button>
+                        </div>
 
                         {/* Image Info */}
                         <div className="mt-2 space-y-1">

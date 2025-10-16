@@ -205,7 +205,7 @@ export const PromoCodes: React.FC = () => {
             <CardContent>
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-orange-600" />
-                <span className="text-2xl font-bold">${stats.total_discount_given.toFixed(2)}</span>
+                <span className="text-2xl font-bold">${Number(stats.total_discount_given).toFixed(2)}</span>
               </div>
             </CardContent>
           </Card>
@@ -294,7 +294,7 @@ export const PromoCodes: React.FC = () => {
                       <TableCell className="font-semibold">
                         {promoCode.discount_type === 'percentage'
                           ? `${promoCode.discount_value}%`
-                          : `$${promoCode.discount_value.toFixed(2)}`}
+                          : `$${Number(promoCode.discount_value).toFixed(2)}`}
                       </TableCell>
                       <TableCell>
                         <Badge variant={promoCode.applies_to === 'order' ? 'default' : 'secondary'}>
