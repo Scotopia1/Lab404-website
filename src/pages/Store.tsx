@@ -11,16 +11,16 @@ import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useProductStore } from '@/stores/useProductStore';
 import { useCartStore } from '@/stores/useCartStore';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ProductGridSkeleton, EmptyState } from '@/components/ui/LoadingStates';
 import { useDebouncedCallback } from '@/hooks/usePerformance';
+import { db } from '@/lib/services/database';
 import CartIcon from '@/components/CartIcon';
 import ProductCard from '@/components/ProductCard';
 import CartDrawer from '@/components/CartDrawer';
-import SearchBar from '@/components/SearchBar';
-import { useStoreSearch, getCategoriesFromFacets, formatCategoryName } from '@/hooks/useStoreSearch';
 
 // MenuBar props interface
 interface MenuBarProps {
@@ -72,14 +72,18 @@ const MenuBar = React.memo<MenuBarProps>(({
           </Link>
         </div>
 
-        {/* Center - Search Bar with Meilisearch */}
+        {/* Center - Search integrated with Header SearchBar */}
         <div className="flex-1 max-w-lg mx-4">
-          <SearchBar
-            onSearch={setSearchQuery}
-            placeholder="Search electronics, components, Arduino..."
-            showSuggestions={true}
-            className="w-full"
-          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products..."
+              className="pl-10 w-full"
+            />
+          </div>
         </div>
 
         {/* Right side - Controls */}
@@ -94,7 +98,7 @@ const MenuBar = React.memo<MenuBarProps>(({
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>
-                    {formatCategoryName(category)}
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -245,93 +249,77 @@ MenuBar.displayName = 'MenuBar';
 
 const Store = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 3000]);
-  const [sortBy, setSortBy] = useState<'name' | 'price-low' | 'price-high'>('name');
+  const [sortBy, setSortBy] = useState('name');
   const [showFilters, setShowFilters] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
 
-  // Use Meilisearch for product search
+  // Use ProductStore for filtering and data
   const {
     products,
-    total,
-    isLoading,
-    isError,
-    search,
-    loadMore,
-    hasMore,
-    facets,
-    performanceMetrics
-  } = useStoreSearch();
+    loading,
+    error,
+    fetchProducts,
+    setFilters,
+    setSearchQuery: setStoreSearchQuery,
+    clearErrors,
+    clearFilters,
+    pagination,
+    setPageSize
+  } = useProductStore();
 
   const { addItem, loading: cartLoading } = useCartStore();
 
-  // Perform search when filters change
-  const performSearch = useDebouncedCallback(() => {
-    const filters = {
-      category: selectedCategory !== 'all' ? selectedCategory : undefined,
-      minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
-      maxPrice: priceRange[1] < 3000 ? priceRange[1] : undefined,
-      sortBy: sortBy,
-      limit: 20,
-      offset: 0,
-    };
-    
-    search(searchQuery, filters);
-    
-    // Update URL with search query
-    if (searchQuery) {
-      navigate(`/store?search=${encodeURIComponent(searchQuery)}`, { replace: true });
-    } else {
-      navigate('/store', { replace: true });
-    }
-  }, 300);
-
-  // Initial load: Search immediately without debounce
+  // Fetch products on mount and handle URL search params
   useEffect(() => {
+    fetchProducts();
+    
+    // Check for search query in URL parameters
     const urlSearchQuery = searchParams.get('search');
     if (urlSearchQuery) {
       setSearchQuery(urlSearchQuery);
+      setStoreSearchQuery(urlSearchQuery);
     }
-    
-    // Direct search call on mount (no debounce)
-    const initialFilters = {
-      category: undefined,
-      minPrice: undefined,
-      maxPrice: undefined,
-      sortBy: sortBy,
-      limit: 20,
-      offset: 0,
-    };
-    
-    search(urlSearchQuery || '', initialFilters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchProducts, searchParams, setStoreSearchQuery]);
 
-  // Trigger search when filters change
+  // Optimized debounced search
+  const debouncedSearch = useDebouncedCallback((query: string) => {
+    setStoreSearchQuery(query);
+  }, 500);
+
   useEffect(() => {
-    performSearch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, selectedCategory, priceRange, sortBy]);
+    debouncedSearch(searchQuery);
+  }, [searchQuery, debouncedSearch]);
 
   // Handle category change
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
+    if (category === 'all') {
+      // Clear the category filter when "all" is selected
+      setFilters({ category: undefined });
+    } else {
+      setFilters({ category });
+    }
   };
 
   // Handle price range change
   const handlePriceRangeChange = (newPriceRange: [number, number]) => {
     setPriceRange(newPriceRange);
+    const filters: any = {};
+    
+    if (newPriceRange[0] > 0 || newPriceRange[1] < 3000) {
+      filters.minPrice = newPriceRange[0];
+      filters.maxPrice = newPriceRange[1];
+    }
+    
+    setFilters(filters);
   };
 
-  // Get categories from Meilisearch facets with fallback
-  const facetCategories = getCategoriesFromFacets(facets);
-  const categories = facetCategories.length > 0 ? facetCategories : [
-    'Arduino', 'Sensors', 'Microchips', 'Components', 'Tools'
-  ];
+  // Simple categories calculation - ProductStore handles filtering
+  const categories = [...new Set(products.map(product => product.category))];
 
   // Handle adding to cart
   const handleAddToCart = async (product: any) => {
@@ -345,15 +333,8 @@ const Store = () => {
 
   // Handle Load More
   const handleLoadMore = () => {
-    loadMore();
-  };
-
-  // Handle clear filters
-  const handleClearFilters = () => {
-    setSearchQuery('');
-    setSelectedCategory('all');
-    setPriceRange([0, 3000]);
-    setSortBy('name');
+    const newLimit = pagination.limit + 20;
+    setPageSize(newLimit);
   };
 
   // Transform product data to match ProductCard component expectations
@@ -363,6 +344,25 @@ const Store = () => {
     compareAtPrice: product.compare_at_price,
     images: product.images || [product.image_url],
   });
+
+  // Sort products based on sortBy state
+  const sortedProducts = useMemo(() => {
+    const productsCopy = [...products];
+
+    switch (sortBy) {
+      case 'name':
+        return productsCopy.sort((a, b) => a.name.localeCompare(b.name));
+      case 'price-low':
+        return productsCopy.sort((a, b) => a.price - b.price);
+      case 'price-high':
+        return productsCopy.sort((a, b) => b.price - a.price);
+      default:
+        return productsCopy;
+    }
+  }, [products, sortBy]);
+
+  // Check if there are more products to load
+  const hasMoreProducts = sortedProducts.length < pagination.total;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -486,7 +486,7 @@ const Store = () => {
         {/* Results Summary */}
         <div className="flex items-center justify-between mb-6">
           <div className="text-sm text-gray-600">
-            Showing {products.length} of {total} products
+            Showing {sortedProducts.length} products
             {selectedCategory !== 'all' && (
               <span className="ml-2">
                 in <Badge variant="outline" className="border-blue-200 text-blue-600">{selectedCategory}</Badge>
@@ -502,18 +502,21 @@ const Store = () => {
 
         {/* Products Grid */}
         <AnimatePresence mode="wait">
-          {isLoading && products.length === 0 ? (
+          {loading ? (
             <ProductGridSkeleton count={8} />
-          ) : isError ? (
+          ) : error ? (
             <div className="text-center py-12">
               <Alert variant="destructive" className="mb-4 max-w-md mx-auto">
-                <AlertDescription>
-                  Search service temporarily unavailable. Please try again.
+                <AlertDescription className="flex items-center justify-between">
+                  {error}
+                  <Button variant="ghost" size="sm" onClick={clearErrors}>
+                    Dismiss
+                  </Button>
                 </AlertDescription>
               </Alert>
-              <Button onClick={() => performSearch()}>Retry</Button>
+              <Button onClick={fetchProducts}>Retry</Button>
             </div>
-          ) : products.length > 0 ? (
+          ) : sortedProducts.length > 0 ? (
             <>
               <motion.div
                 initial={{ opacity: 0 }}
@@ -521,28 +524,28 @@ const Store = () => {
                 exit={{ opacity: 0 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
               >
-                {products.map((product) => (
+                {sortedProducts.map((product) => (
                   <ProductCard key={product.id} product={transformProductData(product)} />
                 ))}
               </motion.div>
 
               {/* Load More Button */}
-              {hasMore && (
+              {hasMoreProducts && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex flex-col items-center justify-center mt-12 mb-8"
                 >
                   <p className="text-sm text-gray-600 mb-4">
-                    Showing {products.length} of {total} products
+                    Showing {sortedProducts.length} of {pagination.total} products
                   </p>
                   <Button
                     onClick={handleLoadMore}
-                    disabled={isLoading}
+                    disabled={loading}
                     size="lg"
                     className="min-w-[200px]"
                   >
-                    {isLoading ? (
+                    {loading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Loading...
@@ -554,11 +557,6 @@ const Store = () => {
                       </>
                     )}
                   </Button>
-                  {performanceMetrics.lastSearchTime > 0 && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Search: {performanceMetrics.lastSearchTime.toFixed(0)}ms
-                    </p>
-                  )}
                 </motion.div>
               )}
             </>
@@ -570,7 +568,12 @@ const Store = () => {
               action={
                 <Button
                   variant="outline"
-                  onClick={handleClearFilters}
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedCategory('all');
+                    setPriceRange([0, 3000]);
+                    clearFilters();
+                  }}
                 >
                   Clear Filters
                 </Button>
