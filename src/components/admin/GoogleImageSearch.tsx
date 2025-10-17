@@ -254,55 +254,55 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 gap-0">
-        <DialogHeader className="p-6 pb-4 border-b">
-          <DialogTitle className="flex items-center gap-2">
-            <ImageIcon className="h-5 w-5" />
+      <DialogContent className="w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl h-[90vh] sm:h-[85vh] md:h-[90vh] max-h-[900px] p-0 gap-0 flex flex-col">
+        <DialogHeader className="p-4 sm:p-6 pb-3 sm:pb-4 border-b flex-shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <ImageIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             Search Google Images
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             Search and select images from Google. {multiSelect ? `Select up to ${maxSelections} images.` : 'Select one image.'}
           </DialogDescription>
         </DialogHeader>
 
         {/* Search and Filters */}
-        <div className="p-6 pb-4 border-b space-y-4">
+        <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b space-y-3 sm:space-y-4 flex-shrink-0">
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
             <Input
               placeholder="Search for images..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-10 pr-10"
+              className="pl-9 sm:pl-10 pr-9 sm:pr-10 text-sm h-9 sm:h-10"
               autoFocus
             />
             {query && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                className="absolute right-0.5 sm:right-1 top-1/2 -translate-y-1/2 h-6 w-6 sm:h-7 sm:w-7 p-0"
                 onClick={() => {
                   setQuery('');
                   setDebouncedQuery('');
                 }}
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
             )}
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Size</Label>
+              <Label className="text-[10px] sm:text-xs text-muted-foreground">Size</Label>
               <Select
                 value={filters.imageSize}
                 onValueChange={(value: any) =>
                   setFilters((prev) => ({ ...prev, imageSize: value }))
                 }
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -318,14 +318,14 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Type</Label>
+              <Label className="text-[10px] sm:text-xs text-muted-foreground">Type</Label>
               <Select
                 value={filters.imageType}
                 onValueChange={(value: any) =>
                   setFilters((prev) => ({ ...prev, imageType: value }))
                 }
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -340,14 +340,14 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Format</Label>
+              <Label className="text-[10px] sm:text-xs text-muted-foreground">Format</Label>
               <Select
                 value={filters.fileType || undefined}
                 onValueChange={(value: any) =>
                   setFilters((prev) => ({ ...prev, fileType: value }))
                 }
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
                   <SelectValue placeholder="All formats" />
                 </SelectTrigger>
                 <SelectContent>
@@ -362,14 +362,14 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Safe Search</Label>
+              <Label className="text-[10px] sm:text-xs text-muted-foreground">Safe Search</Label>
               <Select
                 value={filters.safeSearch}
                 onValueChange={(value: any) =>
                   setFilters((prev) => ({ ...prev, safeSearch: value }))
                 }
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -382,14 +382,14 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
 
           {/* Search Info */}
           {searchInfo && (
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-muted-foreground">
+              <span className="leading-tight">
                 Found {searchInfo.totalResults.toLocaleString()} results in{' '}
                 {searchInfo.searchTime.toFixed(2)}s
               </span>
               {selectedImages.size > 0 && (
-                <Badge variant="secondary" className="gap-1">
-                  <Check className="h-3 w-3" />
+                <Badge variant="secondary" className="gap-1 text-[10px] sm:text-xs h-5 sm:h-6">
+                  <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   {selectedImages.size} selected
                 </Badge>
               )}
@@ -398,13 +398,13 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
         </div>
 
         {/* Image Grid */}
-        <ScrollArea className="h-[450px] px-6">
-          <div className="py-4">
+        <ScrollArea className="flex-1 px-4 sm:px-6 overflow-y-auto">
+          <div className="py-3 sm:py-4">
             {/* Empty State - No Query */}
             {!debouncedQuery && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <ImageIcon className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                <p className="text-sm text-muted-foreground">
+              <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center">
+                <ImageIcon className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mb-2 sm:mb-3" />
+                <p className="text-xs sm:text-sm text-muted-foreground px-4">
                   Enter a search query to find images
                 </p>
               </div>
@@ -412,12 +412,12 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
 
             {/* Loading State */}
             {isLoading && debouncedQuery && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                 {Array.from({ length: 8 }).map((_, index) => (
-                  <div key={index} className="space-y-2">
+                  <div key={index} className="space-y-1.5 sm:space-y-2">
                     <Skeleton className="aspect-square rounded-lg" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-3 sm:h-4 w-3/4" />
+                    <Skeleton className="h-2.5 sm:h-3 w-1/2" />
                   </div>
                 ))}
               </div>
@@ -425,23 +425,23 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
 
             {/* Error States */}
             {error && !isLoading && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <AlertCircle className="h-12 w-12 text-destructive mb-3" />
-                <p className="font-medium text-destructive mb-1">
+              <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center px-4">
+                <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-destructive mb-2 sm:mb-3" />
+                <p className="font-medium text-destructive mb-1 text-sm sm:text-base">
                   {isQuotaExceeded
                     ? 'API Quota Exceeded'
                     : isNetworkError
                     ? 'Network Error'
                     : 'Search Failed'}
                 </p>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 max-w-md">
                   {isQuotaExceeded
                     ? 'The Google Images API daily quota has been exceeded. Please try again tomorrow.'
                     : isNetworkError
                     ? 'Unable to connect to the search service. Please check your connection.'
                     : 'An error occurred while searching for images. Please try again.'}
                 </p>
-                <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <Button variant="outline" size="sm" onClick={() => refetch()} className="text-xs sm:text-sm">
                   Try Again
                 </Button>
               </div>
@@ -449,10 +449,10 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
 
             {/* Empty Results */}
             {!isLoading && !error && debouncedQuery && images.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <ImageIcon className="h-12 w-12 text-muted-foreground/50 mb-3" />
-                <p className="font-medium mb-1">No images found</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center px-4">
+                <ImageIcon className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50 mb-2 sm:mb-3" />
+                <p className="font-medium mb-1 text-sm sm:text-base">No images found</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Try adjusting your search query or filters
                 </p>
               </div>
@@ -460,7 +460,7 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
 
             {/* Image Grid */}
             {!isLoading && !error && images.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                 <AnimatePresence mode="popLayout">
                   {images.map((image, index) => {
                     const isSelected = selectedImages.has(image.url);
@@ -513,22 +513,22 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
                             <Button
                               variant="secondary"
                               size="sm"
-                              className="absolute top-2 right-2 h-8 w-8 p-0"
+                              className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 h-6 w-6 sm:h-8 sm:w-8 p-0"
                               onClick={(e) => handleCopyUrl(image.url, e)}
                             >
-                              <Copy className="h-4 w-4" />
+                              <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
                           )}
                         </div>
 
                         {/* Image Info */}
-                        <div className="mt-2 space-y-1">
-                          <p className="text-xs font-medium line-clamp-1" title={image.title}>
+                        <div className="mt-1.5 sm:mt-2 space-y-0.5 sm:space-y-1">
+                          <p className="text-[10px] sm:text-xs font-medium line-clamp-1" title={image.title}>
                             {image.title}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{image.displaySize}</span>
-                            <span>•</span>
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-xs text-muted-foreground">
+                            <span className="hidden sm:inline">{image.displaySize}</span>
+                            <span className="hidden sm:inline">•</span>
                             <span className="uppercase">{image.fileType}</span>
                           </div>
                         </div>
@@ -543,7 +543,7 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
 
         {/* Pagination */}
         {pagination && pagination.totalPages > 1 && !isLoading && !error && (
-          <div className="border-t px-6 py-3 flex items-center justify-between">
+          <div className="border-t px-4 sm:px-6 py-3 flex items-center justify-between flex-shrink-0 bg-background/95 backdrop-blur-sm">
             <div className="text-sm text-muted-foreground">
               Page {pagination.page} of {pagination.totalPages}
             </div>
@@ -553,17 +553,19 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
                 size="sm"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={!pagination || currentPage === 1}
+                className="h-9 px-3 text-sm"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Previous
+                <span className="hidden sm:inline ml-1">Previous</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={!pagination || !pagination.hasMore}
+                className="h-9 px-3 text-sm"
               >
-                Next
+                <span className="hidden sm:inline mr-1">Next</span>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -571,29 +573,34 @@ export const GoogleImageSearch: React.FC<GoogleImageSearchProps> = ({
         )}
 
         {/* Footer */}
-        <DialogFooter className="border-t px-6 py-4">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2">
+        <DialogFooter className="border-t px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 bg-background mt-auto">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between w-full gap-2 sm:gap-0">
+            <div className="flex items-center justify-center sm:justify-start">
               {selectedImages.size > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleClearSelection}
-                  className="text-muted-foreground"
+                  className="text-muted-foreground text-xs sm:text-sm h-8 sm:h-9"
                 >
                   Clear Selection
                 </Button>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+                className="flex-1 sm:flex-initial text-xs sm:text-sm h-9"
+              >
                 Cancel
               </Button>
               <Button
                 onClick={handleSelectImages}
                 disabled={selectedImages.size === 0}
+                className="flex-1 sm:flex-initial text-xs sm:text-sm h-9"
               >
-                <Check className="h-4 w-4 mr-2" />
+                <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                 Select {selectedImages.size > 0 ? `(${selectedImages.size})` : ''}
               </Button>
             </div>
