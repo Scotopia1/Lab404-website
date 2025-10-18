@@ -113,12 +113,12 @@ export const useMemoizedComputation = <T, TDeps extends readonly any[]>(
     const startTime = performance.now();
     const result = computeFn();
     const endTime = performance.now();
-    
+
     // Log slow computations in development
-    if (process.env.NODE_ENV === 'development' && endTime - startTime > 16) {
+    if (import.meta.env.DEV && endTime - startTime > 16) {
       console.warn(`Slow computation detected: ${endTime - startTime}ms`);
     }
-    
+
     return result;
   }, deps);
 };
@@ -156,8 +156,8 @@ export const usePerformanceMonitor = (name: string) => {
     return () => {
       if (startTime.current) {
         const duration = performance.now() - startTime.current;
-        
-        if (process.env.NODE_ENV === 'development' && duration > 16) {
+
+        if (import.meta.env.DEV && duration > 16) {
           console.log(`${name} render ${renderCount.current}: ${duration.toFixed(2)}ms`);
         }
       }

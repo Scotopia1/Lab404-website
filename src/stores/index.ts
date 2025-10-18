@@ -138,7 +138,7 @@ export const checkStoreHealth = () => {
 // =============================================
 
 // Development helper to inspect store states
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   (window as any).__LAB404_STORES__ = {
     cart: useCartStore,
     preferences: usePreferencesStore,
@@ -146,7 +146,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     reset: resetAllStores,
     healthCheck: checkStoreHealth,
   };
-  
+
   console.log('🛠️ Store devtools available at window.__LAB404_STORES__');
 }
 

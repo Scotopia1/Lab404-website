@@ -237,7 +237,7 @@ class ErrorTrackingService {
     }
 
     // Console logging in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.group(`🚨 ${errorReport.level.toUpperCase()}: ${errorReport.message}`);
       console.log('Timestamp:', errorReport.timestamp);
       console.log('URL:', errorReport.url);
@@ -271,7 +271,7 @@ class ErrorTrackingService {
     }
 
     // Console logging in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`📊 Performance: ${performanceMetric.name} = ${performanceMetric.value}${performanceMetric.unit}`);
     }
   }
@@ -359,9 +359,9 @@ class ErrorTrackingService {
 
   public endSession(): void {
     this.currentSession.endTime = new Date();
-    
+
     // In production, send session data to analytics service
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log('📈 Session ended:', this.currentSession);
     }
   }

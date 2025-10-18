@@ -2,7 +2,7 @@
 import { env } from '../lib/env';
 
 // API Configuration
-const API_BASE_URL = env.apiBaseUrl || process.env.VITE_API_BASE_URL;
+const API_BASE_URL = env.apiBaseUrl;
 
 // Response types
 interface ApiResponse<T = any> {

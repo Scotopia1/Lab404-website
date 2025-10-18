@@ -394,7 +394,7 @@ Please assist when possible. Thank you!`
     }
 
     // Console log for development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log('WhatsApp Interaction:', event, data);
     }
   }
