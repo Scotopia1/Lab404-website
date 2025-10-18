@@ -130,6 +130,8 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'es2020',
     sourcemap: mode === 'development',
+    // Disable modulepreload to prevent empty href warnings
+    modulePreload: false,
     rollupOptions: {
       output: {
         manualChunks: {
