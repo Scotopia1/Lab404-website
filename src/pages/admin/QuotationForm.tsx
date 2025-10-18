@@ -154,7 +154,7 @@ const QuotationForm: React.FC = () => {
     }
   };
 
-  // Search products
+  // Search products using Meilisearch
   const searchProducts = async (query: string) => {
     if (!query.trim()) {
       setProducts([]);
@@ -163,13 +163,14 @@ const QuotationForm: React.FC = () => {
 
     try {
       setSearchingProducts(true);
-      const response = await apiClient.getProducts({
-        search: query,
+      const response = await apiClient.searchProducts(query, {
         limit: 20,
-        is_active: true,
+        filters: {
+          is_active: true,
+        },
       });
 
-      const productOptions: ProductOption[] = response.data.map(product => ({
+      const productOptions: ProductOption[] = response.hits.map(product => ({
         id: product.id,
         name: product.name,
         sku: product.sku,
