@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { AdminProtectedRoute } from '@/components/admin/AdminProtectedRoute';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
-import { UserManagement } from '@/components/admin/UserManagement';
+import { CustomerManagement } from '@/components/admin/CustomerManagement';
 import { ProductManagement } from '@/components/admin/ProductManagement';
 import { OrderManagement } from '@/components/admin/OrderManagement';
 import { Analytics } from '@/components/admin/Analytics';
@@ -29,8 +29,8 @@ const Admin: React.FC = () => {
           {/* Default Dashboard */}
           <Route index element={<AdminDashboard />} />
 
-          {/* User Management */}
-          <Route path="users/*" element={<UserManagement />} />
+          {/* Customer Management */}
+          <Route path="customers/*" element={<CustomerManagement />} />
 
           {/* Product Management */}
           <Route path="products/*" element={<ProductManagement />} />

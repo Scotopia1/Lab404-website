@@ -64,12 +64,18 @@ const formatPhoneNumber = (countryCode: string, phoneNumber: string): string => 
 
 // Form validation schema
 const checkoutSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
+  firstName: z.string().min(2, 'First name must be at least 2 characters'),
+  lastName: z.string().min(1, 'Last name is required'),
   countryCode: z.string().min(1, 'Please select country code'),
   mobile: z.string().min(6, 'Please enter a valid mobile number').regex(/^[0-9]+$/, 'Only numbers are allowed'),
   email: z.string().email('Please enter a valid email address'),
+  addressLine1: z.string().min(5, 'Street address is required (minimum 5 characters)'),
+  addressLine2: z.string().optional(),
+  building: z.string().optional(),
+  floor: z.string().optional(),
+  city: z.string().min(2, 'City is required'),
   region: z.string().min(1, 'Please select your delivery region'),
-  address: z.string().min(10, 'Please enter your complete address'),
+  postalCode: z.string().optional(),
   note: z.string().max(500).optional(),
   paymentMethod: z.enum(['cash_on_delivery'])
 });
@@ -85,12 +91,18 @@ export default function Checkout() {
 
   // Form state
   const [formData, setFormData] = useState<CheckoutFormData>({
-    name: '',
+    firstName: '',
+    lastName: '',
     countryCode: '+961', // Default to Lebanon
     mobile: '',
     email: '',
+    addressLine1: '',
+    addressLine2: '',
+    building: '',
+    floor: '',
+    city: '',
     region: '',
-    address: '',
+    postalCode: '',
     note: '',
     paymentMethod: 'cash_on_delivery'
   });
@@ -204,15 +216,13 @@ export default function Checkout() {
       // Format phone number for API (combine country code + number)
       const formattedPhone = formatPhoneNumber(formData.countryCode, formData.mobile);
 
-      // Split name into first and last (handle single-word names)
-      const nameParts = formData.name.trim().split(' ');
-      const firstName = nameParts[0] || formData.name;
-      const lastName = nameParts.slice(1).join(' ') || ''; // Empty string for single-word names
+      // Construct full name for guest_name
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
 
       const orderData: any = {
         payment_method: formData.paymentMethod,
         guest_email: formData.email,
-        guest_name: formData.name,
+        guest_name: fullName,
         guest_phone: formattedPhone,
         items: items.map(item => ({
           product_id: item.productId,
@@ -220,11 +230,15 @@ export default function Checkout() {
           unit_price: item.price,
         })),
         shipping_address: {
-          first_name: firstName,
-          last_name: lastName,
-          address_line_1: formData.address,
-          city: regionLabel,
-          postal_code: '00000', // Default for Lebanon
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          address_line_1: formData.addressLine1,
+          address_line_2: formData.addressLine2 || '',
+          building: formData.building || '',
+          floor: formData.floor || '',
+          city: formData.city,
+          state: regionLabel,
+          postal_code: formData.postalCode || '00000',
           country: 'Lebanon',
           phone: formattedPhone,
         },
@@ -324,17 +338,30 @@ export default function Checkout() {
             </div>
 
             <div className="space-y-6">
-              {/* Name */}
-              <div>
-                <Label htmlFor="name" className="text-sm font-medium text-blue-700">Full Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className={cn("mt-1", errors.name && "border-red-300")}
-                  placeholder="Enter your full name"
-                />
-                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+              {/* Name - Split into First and Last */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName" className="text-sm font-medium text-blue-700">First Name *</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    className={cn("mt-1", errors.firstName && "border-red-300")}
+                    placeholder="Enter first name"
+                  />
+                  {errors.firstName && <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="lastName" className="text-sm font-medium text-blue-700">Last Name *</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    className={cn("mt-1", errors.lastName && "border-red-300")}
+                    placeholder="Enter last name"
+                  />
+                  {errors.lastName && <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
+                </div>
               </div>
 
               {/* Mobile Number - Split into Country Code and Number */}
@@ -379,28 +406,90 @@ export default function Checkout() {
                 )}
               </div>
 
-              {/* Email and Region */}
+              {/* Email */}
+              <div>
+                <Label htmlFor="email" className="text-sm font-medium text-blue-700">Email Address *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className={cn("mt-1", errors.email && "border-red-300")}
+                  placeholder="your.email@example.com"
+                />
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              </div>
+
+              {/* Address Line 1 */}
+              <div>
+                <Label htmlFor="addressLine1" className="text-sm font-medium text-blue-700">Street Address *</Label>
+                <Input
+                  id="addressLine1"
+                  value={formData.addressLine1}
+                  onChange={(e) => handleInputChange('addressLine1', e.target.value)}
+                  className={cn("mt-1", errors.addressLine1 && "border-red-300")}
+                  placeholder="Street name and number"
+                />
+                {errors.addressLine1 && <p className="mt-1 text-sm text-red-600">{errors.addressLine1}</p>}
+              </div>
+
+              {/* Address Line 2 */}
+              <div>
+                <Label htmlFor="addressLine2" className="text-sm font-medium text-blue-700">Address Line 2 (Optional)</Label>
+                <Input
+                  id="addressLine2"
+                  value={formData.addressLine2}
+                  onChange={(e) => handleInputChange('addressLine2', e.target.value)}
+                  className="mt-1"
+                  placeholder="Apartment, suite, unit, etc."
+                />
+              </div>
+
+              {/* Building and Floor */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="email" className="text-sm font-medium text-blue-700">Email Address *</Label>
+                  <Label htmlFor="building" className="text-sm font-medium text-blue-700">Building (Optional)</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={cn("mt-1", errors.email && "border-red-300")}
-                    placeholder="your.email@example.com"
+                    id="building"
+                    value={formData.building}
+                    onChange={(e) => handleInputChange('building', e.target.value)}
+                    className="mt-1"
+                    placeholder="Building name/number"
                   />
-                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="region" className="text-sm font-medium text-blue-700">Delivery Region *</Label>
+                  <Label htmlFor="floor" className="text-sm font-medium text-blue-700">Floor (Optional)</Label>
+                  <Input
+                    id="floor"
+                    value={formData.floor}
+                    onChange={(e) => handleInputChange('floor', e.target.value)}
+                    className="mt-1"
+                    placeholder="Floor number"
+                  />
+                </div>
+              </div>
+
+              {/* City and Region */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="city" className="text-sm font-medium text-blue-700">City *</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    className={cn("mt-1", errors.city && "border-red-300")}
+                    placeholder="Enter city name"
+                  />
+                  {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="region" className="text-sm font-medium text-blue-700">Region *</Label>
                   <Select
                     value={formData.region}
                     onValueChange={(value) => handleInputChange('region', value)}
                   >
                     <SelectTrigger className={cn("mt-1", errors.region && "border-red-300")}>
-                      <SelectValue placeholder="Select your region" />
+                      <SelectValue placeholder="Select region" />
                     </SelectTrigger>
                     <SelectContent>
                       {lebanonRegions.map((region) => (
@@ -414,18 +503,16 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {/* Address */}
+              {/* Postal Code */}
               <div>
-                <Label htmlFor="address" className="text-sm font-medium text-blue-700">Full Address *</Label>
-                <Textarea
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  className={cn("mt-1", errors.address && "border-red-300")}
-                  placeholder="Enter your complete delivery address including building, floor, and area"
-                  rows={3}
+                <Label htmlFor="postalCode" className="text-sm font-medium text-blue-700">Postal Code (Optional)</Label>
+                <Input
+                  id="postalCode"
+                  value={formData.postalCode}
+                  onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                  className="mt-1"
+                  placeholder="Enter postal code"
                 />
-                {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
               </div>
 
               {/* Note */}

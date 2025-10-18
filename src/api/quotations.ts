@@ -125,7 +125,7 @@ export const quotationsApi = {
 
   // Generate PDF for quotation (returns PDF blob)
   generateQuotationPDF: async (id: string, download: boolean = false): Promise<Blob> => {
-    const API_BASE_URL = 'http://localhost:3000/api'; // TODO: Use env configuration
+    const API_BASE_URL = process.env.VITE_API_BASE_URL ; // TODO: Use env configuration
     const token = localStorage.getItem('lab404_access_token');
 
     const response = await fetch(`${API_BASE_URL}/quotations/${id}/pdf?download=${download}`, {

@@ -2,7 +2,7 @@
 import { env } from '../lib/env';
 
 // API Configuration
-const API_BASE_URL = env.apiBaseUrl || 'http://localhost:3000/api';
+const API_BASE_URL = env.apiBaseUrl || process.env.VITE_API_BASE_URL;
 
 // Response types
 interface ApiResponse<T = any> {
@@ -184,6 +184,77 @@ interface BlogCategoryFilters {
   sort_order?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+}
+
+// Customer interfaces
+interface Customer {
+  id: string;
+  email: string;
+  is_active: boolean;
+  notes: string | null;
+  total_orders: number;
+  total_spent: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface CustomerName {
+  id: string;
+  customer_id: string;
+  first_name: string;
+  last_name: string | null;
+  is_primary: boolean;
+  used_in_orders: number;
+  created_at: string;
+}
+
+interface CustomerAddress {
+  id: string;
+  customer_id: string;
+  address_line_1: string;
+  address_line_2: string | null;
+  building: string | null;
+  floor: string | null;
+  city: string;
+  region: string | null;
+  postal_code: string | null;
+  country: string;
+  phone: string | null;
+  is_primary: boolean;
+  used_in_orders: number;
+  created_at: string;
+}
+
+interface CustomerPhone {
+  id: string;
+  customer_id: string;
+  phone: string;
+  is_primary: boolean;
+  used_in_orders: number;
+  created_at: string;
+}
+
+interface CustomerWithDetails extends Customer {
+  names: CustomerName[];
+  addresses: CustomerAddress[];
+  phones: CustomerPhone[];
+  orders?: any[];
+}
+
+interface CustomerFilters {
+  search?: string;
+  is_active?: boolean;
+  min_orders?: number;
+  max_orders?: number;
+  min_spent?: number;
+  max_spent?: number;
+  created_from?: string;
+  created_to?: string;
+  sort_by?: 'created_at' | 'email' | 'total_orders' | 'total_spent';
+  sort_order?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+  page?: number;
 }
 
 // API Error class
@@ -1244,7 +1315,7 @@ class ApiClient {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}/upload/images`, {
+    const response = await fetch(this.buildUrl('/upload/images'), {
       method: 'POST',
       headers,
       body: formData // Don't set Content-Type header - browser will set it with boundary
@@ -1383,7 +1454,7 @@ class ApiClient {
       'Authorization': `Bearer ${token}`
     };
 
-    const response = await fetch(`${API_BASE_URL}/admin/promo-codes/export`, {
+    const response = await fetch(this.buildUrl('/admin/promo-codes/export'), {
       method: 'GET',
       headers,
     });
@@ -1401,7 +1472,7 @@ class ApiClient {
       'Authorization': `Bearer ${token}`
     };
 
-    const response = await fetch(`${API_BASE_URL}/admin/promo-codes/template`, {
+    const response = await fetch(this.buildUrl('/admin/promo-codes/template'), {
       method: 'GET',
       headers,
     });
@@ -1583,6 +1654,76 @@ class ApiClient {
   async markExpiredQuotations(): Promise<any> {
     return this.post('/quotations/mark-expired');
   }
+
+  // Customer management methods
+  /**
+   * Get all customers (admin only)
+   */
+  async getCustomers(filters?: CustomerFilters): Promise<PaginatedResponse<CustomerWithDetails>> {
+    return this.get('/admin/customers', filters);
+  }
+
+  /**
+   * Get customer by ID (admin only)
+   */
+  async getCustomer(id: string): Promise<{
+    success: boolean;
+    data: CustomerWithDetails;
+  }> {
+    return this.get(`/admin/customers/${id}`);
+  }
+
+  /**
+   * Create new customer (admin only)
+   */
+  async createCustomer(customerData: {
+    email: string;
+    notes?: string;
+    is_active?: boolean;
+    name?: {
+      first_name: string;
+      last_name?: string;
+    };
+    address?: {
+      address_line_1: string;
+      address_line_2?: string;
+      building?: string;
+      floor?: string;
+      city: string;
+      region?: string;
+      postal_code?: string;
+      country?: string;
+      phone?: string;
+    };
+    phone?: string;
+  }): Promise<CustomerWithDetails> {
+    return this.post('/admin/customers', customerData);
+  }
+
+  /**
+   * Update customer (admin only)
+   */
+  async updateCustomer(id: string, customerData: {
+    email?: string;
+    notes?: string;
+    is_active?: boolean;
+  }): Promise<Customer> {
+    return this.put(`/admin/customers/${id}`, customerData);
+  }
+
+  /**
+   * Delete customer (admin only)
+   */
+  async deleteCustomer(id: string): Promise<void> {
+    return this.delete(`/admin/customers/${id}`);
+  }
+
+  /**
+   * Get customer orders (admin only)
+   */
+  async getCustomerOrders(customerId: string): Promise<any[]> {
+    return this.get(`/admin/customers/${customerId}/orders`);
+  }
 }
 
 // Export singleton instance
@@ -1638,5 +1779,11 @@ export type {
   BlogPostFilters,
   BlogCategoryFilters,
   Review,
-  ReviewSummary
+  ReviewSummary,
+  Customer,
+  CustomerName,
+  CustomerAddress,
+  CustomerPhone,
+  CustomerWithDetails,
+  CustomerFilters
 };

@@ -65,11 +65,10 @@ const navigationItems: NavItem[] = [
     href: '/admin',
   },
   {
-    id: 'users',
-    label: 'Users',
+    id: 'customers',
+    label: 'Customers',
     icon: Users,
-    href: '/admin/users',
-    badge: 'new',
+    href: '/admin/customers',
   },
   {
     id: 'products',
