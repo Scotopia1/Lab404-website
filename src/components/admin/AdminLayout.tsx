@@ -267,10 +267,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <motion.div
         initial={false}
         animate={{ width: sidebarCollapsed ? '4rem' : '16rem' }}
-        className="fixed left-0 top-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 z-30 shadow-sm"
+        className="fixed left-0 top-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 z-30 shadow-sm flex flex-col"
       >
         {/* Logo/Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <AnimatePresence>
             {!sidebarCollapsed && (
               <motion.div
@@ -309,7 +309,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="p-4"
+              className="p-4 flex-shrink-0"
             >
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -326,12 +326,12 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </AnimatePresence>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
           {filteredNavItems.map(item => renderNavItem(item))}
-        </div>
+        </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
