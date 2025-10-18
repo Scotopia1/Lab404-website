@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit, Trash2, Package, Users, BarChart3, Settings, LogOut, Eye, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, Users, BarChart3, Settings, LogOut, Eye, Loader2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -222,6 +222,12 @@ const Dashboard = () => {
                 <Button className="bg-blue-600 hover:bg-blue-700">
                   <Plus className="h-4 w-4 mr-2" />
                   Add New Product
+                </Button>
+              </Link>
+              <Link to="/admin/quotations/new">
+                <Button variant="outline">
+                  <FileText className="h-4 w-4 mr-2" />
+                  New Quotation
                 </Button>
               </Link>
               <Link to="/alibaba-import">

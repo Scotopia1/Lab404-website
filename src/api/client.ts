@@ -1495,6 +1495,94 @@ class ApiClient {
       folder: folder || 'google-images',
     });
   }
+
+  // ============================================
+  // Quotations API Methods
+  // ============================================
+
+  /**
+   * Get all quotations with filtering and pagination
+   */
+  async getQuotations(filters?: Record<string, any>): Promise<PaginatedResponse<any>> {
+    return this.get('/quotations', filters);
+  }
+
+  /**
+   * Get a single quotation by ID
+   */
+  async getQuotation(id: string, includeHistory: boolean = false): Promise<any> {
+    return this.get(`/quotations/${id}`, { include_history: includeHistory });
+  }
+
+  /**
+   * Create a new quotation
+   */
+  async createQuotation(data: any): Promise<any> {
+    return this.post('/quotations', data);
+  }
+
+  /**
+   * Update an existing quotation
+   */
+  async updateQuotation(id: string, data: any): Promise<any> {
+    return this.put(`/quotations/${id}`, data);
+  }
+
+  /**
+   * Change quotation status
+   */
+  async changeQuotationStatus(id: string, data: any): Promise<any> {
+    return this.post(`/quotations/${id}/status`, data);
+  }
+
+  /**
+   * Approve a quotation
+   */
+  async approveQuotation(id: string, reason?: string, notes?: string): Promise<any> {
+    return this.post(`/quotations/${id}/approve`, { reason, notes });
+  }
+
+  /**
+   * Reject a quotation
+   */
+  async rejectQuotation(id: string, reason?: string, notes?: string): Promise<any> {
+    return this.post(`/quotations/${id}/reject`, { reason, notes });
+  }
+
+  /**
+   * Convert quotation to order
+   */
+  async convertQuotationToOrder(id: string): Promise<any> {
+    return this.post(`/quotations/${id}/convert`);
+  }
+
+  /**
+   * Delete a quotation (drafts only)
+   */
+  async deleteQuotation(id: string): Promise<void> {
+    return this.delete(`/quotations/${id}`);
+  }
+
+  /**
+   * Get quotation summary/analytics
+   */
+  async getQuotationSummary(): Promise<any> {
+    return this.get('/quotations/summary');
+  }
+
+  /**
+   * Generate PDF for quotation
+   */
+  async generateQuotationPDF(id: string): Promise<any> {
+    return this.get(`/quotations/${id}/pdf`);
+  }
+
+  /**
+   * Mark expired quotations (admin utility)
+   */
+  async markExpiredQuotations(): Promise<any> {
+    return this.post('/quotations/mark-expired');
+  }
 }
 
 // Export singleton instance

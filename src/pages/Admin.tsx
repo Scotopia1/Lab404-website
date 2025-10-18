@@ -17,6 +17,9 @@ import AlibabaImport from '@/pages/AlibabaImport';
 import PromoCodes from '@/pages/admin/PromoCodes';
 import PromoCodeForm from '@/pages/admin/PromoCodeForm';
 import ContactSubmissions from '@/pages/admin/ContactSubmissions';
+import Quotations from '@/pages/admin/Quotations';
+import QuotationDetails from '@/pages/admin/QuotationDetails';
+import QuotationForm from '@/pages/admin/QuotationForm';
 
 const Admin: React.FC = () => {
   return (
@@ -57,6 +60,12 @@ const Admin: React.FC = () => {
           <Route path="promo-codes" element={<PromoCodes />} />
           <Route path="promo-codes/new" element={<PromoCodeForm />} />
           <Route path="promo-codes/:id" element={<PromoCodeForm />} />
+
+          {/* Quotation Management */}
+          <Route path="quotations" element={<Quotations />} />
+          <Route path="quotations/new" element={<QuotationForm />} />
+          <Route path="quotations/edit/:id" element={<QuotationForm />} />
+          <Route path="quotations/:id" element={<QuotationDetails />} />
 
           {/* System Settings (Super Admin Only) */}
           <Route

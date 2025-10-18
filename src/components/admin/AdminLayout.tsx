@@ -41,6 +41,7 @@ import {
   Import,
   Tag,
   MessageSquare,
+  FileText as QuoteIcon,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -94,6 +95,13 @@ const navigationItems: NavItem[] = [
     label: 'Promo Codes',
     icon: Tag,
     href: '/admin/promo-codes',
+  },
+  {
+    id: 'quotations',
+    label: 'Quotations',
+    icon: QuoteIcon,
+    href: '/admin/quotations',
+    badge: 'new',
   },
   {
     id: 'orders',
