@@ -170,6 +170,17 @@ export const quotationsApi = {
     const futureDate = new Date();
     futureDate.setDate(futureDate.getDate() + 30); // 30 days from now
 
+    // Helper to safely convert string/number to number
+    const toNumber = (value: any): number => {
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string') return parseFloat(value) || 0;
+      return 0;
+    };
+
+    // Ensure only one discount type is used (backend validation requirement)
+    const hasPercentageDiscount = toNumber(original.discount_percentage) > 0;
+    const hasAmountDiscount = toNumber(original.discount_amount) > 0;
+
     const duplicateData: CreateQuotationInput = {
       customer_name: original.customer_name,
       customer_email: original.customer_email,
@@ -177,18 +188,23 @@ export const quotationsApi = {
       customer_company: original.customer_company || undefined,
       customer_address: original.customer_address || undefined,
       valid_until: futureDate,
-      items: original.items.map(item => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        discount_percentage: item.discount_percentage ?? 0,
-        discount_amount: item.discount_amount ?? 0,
-        sort_order: item.sort_order ?? 0,
-      })),
-      discount_percentage: original.discount_percentage ?? 0,
-      discount_amount: original.discount_amount ?? 0,
-      tax_percentage: original.tax_percentage ?? 0,
-      shipping_amount: original.shipping_amount ?? 0,
+      items: original.items.map(item => {
+        // Same logic for item-level discounts
+        const itemHasPercentage = toNumber(item.discount_percentage) > 0;
+        return {
+          product_id: item.product_id,
+          quantity: item.quantity,
+          unit_price: toNumber(item.unit_price),
+          discount_percentage: itemHasPercentage ? toNumber(item.discount_percentage) : 0,
+          discount_amount: itemHasPercentage ? 0 : toNumber(item.discount_amount),
+          sort_order: item.sort_order ?? 0,
+        };
+      }),
+      // Use only one discount type at quotation level
+      discount_percentage: hasPercentageDiscount ? toNumber(original.discount_percentage) : 0,
+      discount_amount: hasPercentageDiscount ? 0 : toNumber(original.discount_amount),
+      tax_percentage: toNumber(original.tax_percentage),
+      shipping_amount: toNumber(original.shipping_amount),
       currency: original.currency || 'USD',
       notes: original.notes || undefined,
       internal_notes: original.internal_notes || undefined,

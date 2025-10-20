@@ -300,11 +300,25 @@ export const calculateLineTotal = (
 
 export const calculateQuotationTotals = (
   items: { quantity: number; unit_price: number; discount_percentage?: number; discount_amount?: number }[],
-  globalDiscountPercentage: number = 0,
-  globalDiscountAmount: number = 0,
-  taxPercentage: number = 0,
-  shippingAmount: number = 0
+  globalDiscountPercentage: number | string = 0,
+  globalDiscountAmount: number | string = 0,
+  taxPercentage: number | string = 0,
+  shippingAmount: number | string = 0
 ): QuotationCalculation => {
+  // Helper to safely convert string/number to number
+  const toNum = (val: number | string | undefined | null): number => {
+    if (val === undefined || val === null) return 0;
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') return parseFloat(val) || 0;
+    return 0;
+  };
+
+  // Convert all inputs to numbers
+  const globalDiscountPct = toNum(globalDiscountPercentage);
+  const globalDiscountAmt = toNum(globalDiscountAmount);
+  const taxPct = toNum(taxPercentage);
+  const shipping = toNum(shippingAmount);
+
   // Calculate line totals for each item
   const itemTotals = items.map(item => {
     const itemSubtotal = item.quantity * item.unit_price;
@@ -323,24 +337,24 @@ export const calculateQuotationTotals = (
 
   // Apply global discount
   let globalDiscount = 0;
-  if (globalDiscountPercentage > 0) {
-    globalDiscount = subtotal * (globalDiscountPercentage / 100);
-  } else if (globalDiscountAmount > 0) {
-    globalDiscount = Math.min(globalDiscountAmount, subtotal);
+  if (globalDiscountPct > 0) {
+    globalDiscount = subtotal * (globalDiscountPct / 100);
+  } else if (globalDiscountAmt > 0) {
+    globalDiscount = Math.min(globalDiscountAmt, subtotal);
   }
 
   const discountedSubtotal = subtotal - globalDiscount;
 
   // Calculate tax on discounted subtotal
-  const tax_amount = discountedSubtotal * (taxPercentage / 100);
+  const tax_amount = discountedSubtotal * (taxPct / 100);
 
-  const total_amount = discountedSubtotal + tax_amount + shippingAmount;
+  const total_amount = discountedSubtotal + tax_amount + shipping;
 
   return {
     subtotal: Number(subtotal.toFixed(2)),
     discount_amount: Number(globalDiscount.toFixed(2)),
     tax_amount: Number(tax_amount.toFixed(2)),
-    shipping_amount: Number(shippingAmount.toFixed(2)),
+    shipping_amount: Number(shipping.toFixed(2)),
     total_amount: Number(total_amount.toFixed(2)),
   };
 };
