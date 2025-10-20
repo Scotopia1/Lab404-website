@@ -78,9 +78,9 @@ const calculateCartSummary = (items: CartItem[]): CartSummary => {
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const uniqueItemCount = items.length;
   
-  // Tax calculation (11% VAT in Lebanon)
-  const taxRate = 0.11;
-  const tax = subtotal * taxRate;
+  // Tax calculation - No tax applied
+  const taxRate = 0;
+  const tax = 0;
 
   // Shipping calculation - $0 delivery fee
   const shipping = 0;
