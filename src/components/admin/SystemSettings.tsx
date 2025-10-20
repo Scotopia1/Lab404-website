@@ -91,11 +91,18 @@ const systemPreferencesSchema = z.object({
   backupFrequency: z.string(),
 });
 
+const taxSettingsSchema = z.object({
+  taxEnabled: z.boolean(),
+  taxRate: z.number().min(0).max(100), // percentage 0-100
+  taxLabel: z.string().min(1, 'Tax label is required'),
+});
+
 type SiteConfigData = z.infer<typeof siteConfigSchema>;
 type PaymentSettingsData = z.infer<typeof paymentSettingsSchema>;
 type ShippingSettingsData = z.infer<typeof shippingSettingsSchema>;
 type EmailSettingsData = z.infer<typeof emailSettingsSchema>;
 type SystemPreferencesData = z.infer<typeof systemPreferencesSchema>;
+type TaxSettingsData = z.infer<typeof taxSettingsSchema>;
 
 interface SystemSettings {
   siteConfig: SiteConfigData;
@@ -103,6 +110,7 @@ interface SystemSettings {
   shippingSettings: ShippingSettingsData;
   emailSettings: EmailSettingsData;
   systemPreferences: SystemPreferencesData;
+  taxSettings: TaxSettingsData;
 }
 
 export const SystemSettings: React.FC = () => {
@@ -182,6 +190,15 @@ export const SystemSettings: React.FC = () => {
     },
   });
 
+  const taxForm = useForm<TaxSettingsData>({
+    resolver: zodResolver(taxSettingsSchema),
+    defaultValues: {
+      taxEnabled: false,
+      taxRate: 0,
+      taxLabel: 'VAT',
+    },
+  });
+
   // Load settings on component mount
   useEffect(() => {
     loadSettings();
@@ -251,6 +268,11 @@ export const SystemSettings: React.FC = () => {
             autoBackupEnabled: true,
             backupFrequency: 'daily',
           },
+          taxSettings: {
+            taxEnabled: false,
+            taxRate: 0,
+            taxLabel: 'VAT',
+          },
         };
       }
 
@@ -262,6 +284,7 @@ export const SystemSettings: React.FC = () => {
       shippingForm.reset(settingsData.shippingSettings);
       emailForm.reset(settingsData.emailSettings);
       systemForm.reset(settingsData.systemPreferences);
+      taxForm.reset(settingsData.taxSettings);
 
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -292,6 +315,9 @@ export const SystemSettings: React.FC = () => {
           break;
         case 'systemPreferences':
           response = await apiClient.updateSystemPreferences(data);
+          break;
+        case 'taxSettings':
+          response = await apiClient.updateTaxSettings(data);
           break;
         default:
           throw new Error(`Unknown settings section: ${section}`);
@@ -369,7 +395,7 @@ export const SystemSettings: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="site" className="flex items-center space-x-2">
             <Store className="h-4 w-4" />
             <span>Site</span>
@@ -381,6 +407,10 @@ export const SystemSettings: React.FC = () => {
           <TabsTrigger value="shipping" className="flex items-center space-x-2">
             <Truck className="h-4 w-4" />
             <span>Shipping</span>
+          </TabsTrigger>
+          <TabsTrigger value="tax" className="flex items-center space-x-2">
+            <Database className="h-4 w-4" />
+            <span>Tax</span>
           </TabsTrigger>
           <TabsTrigger value="email" className="flex items-center space-x-2">
             <Mail className="h-4 w-4" />
@@ -843,6 +873,125 @@ export const SystemSettings: React.FC = () => {
                       <Save className="h-4 w-4 mr-2" />
                     )}
                     Save Shipping Settings
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tax Configuration Tab */}
+        <TabsContent value="tax" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Database className="h-5 w-5" />
+                <span>Tax Configuration</span>
+              </CardTitle>
+              <CardDescription>
+                Configure global tax settings for your store. This will apply to all orders.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form
+                onSubmit={taxForm.handleSubmit((data) => saveSettings('taxSettings', data))}
+                className="space-y-6"
+              >
+                {/* Tax Enable/Disable */}
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-blue-100">
+                  <div>
+                    <Label className="text-base font-medium">Enable Tax</Label>
+                    <p className="text-sm text-gray-600">
+                      Apply tax to all orders based on the configured rate below
+                    </p>
+                  </div>
+                  <Switch
+                    checked={taxForm.watch('taxEnabled')}
+                    onCheckedChange={(checked) => taxForm.setValue('taxEnabled', checked)}
+                  />
+                </div>
+
+                {/* Tax Configuration */}
+                {taxForm.watch('taxEnabled') && (
+                  <div className="space-y-4 pl-4 border-l-2 border-blue-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="taxRate">Tax Rate (%) *</Label>
+                        <Input
+                          id="taxRate"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          {...taxForm.register('taxRate', { valueAsNumber: true })}
+                          placeholder="11.00"
+                        />
+                        {taxForm.formState.errors.taxRate && (
+                          <p className="text-sm text-red-600">{taxForm.formState.errors.taxRate.message}</p>
+                        )}
+                        <p className="text-sm text-gray-500">
+                          Enter tax percentage (e.g., 11 for 11% VAT)
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="taxLabel">Tax Label *</Label>
+                        <Input
+                          id="taxLabel"
+                          {...taxForm.register('taxLabel')}
+                          placeholder="VAT"
+                        />
+                        {taxForm.formState.errors.taxLabel && (
+                          <p className="text-sm text-red-600">{taxForm.formState.errors.taxLabel.message}</p>
+                        )}
+                        <p className="text-sm text-gray-500">
+                          Display name for tax (e.g., "VAT", "Sales Tax", "GST")
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Tax Preview */}
+                    <div className="bg-gray-50 p-4 rounded-lg border">
+                      <h4 className="text-sm font-semibold mb-2">Preview</h4>
+                      <p className="text-sm text-gray-600">
+                        For a $100.00 order, the {taxForm.watch('taxLabel')} will be:
+                        <span className="font-bold text-blue-600 ml-1">
+                          ${((100 * (taxForm.watch('taxRate') || 0)) / 100).toFixed(2)}
+                        </span>
+                      </p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Total amount:
+                        <span className="font-bold ml-1">
+                          ${(100 + (100 * (taxForm.watch('taxRate') || 0)) / 100).toFixed(2)}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Warning when tax is disabled */}
+                {!taxForm.watch('taxEnabled') && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-2">
+                      <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-semibold text-yellow-800">Tax Disabled</h4>
+                        <p className="text-sm text-yellow-700 mt-1">
+                          No tax will be applied to orders. Enable tax above to start collecting tax on purchases.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={saveLoading}>
+                    {saveLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Save Tax Settings
                   </Button>
                 </div>
               </form>

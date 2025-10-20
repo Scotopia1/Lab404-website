@@ -1109,6 +1109,14 @@ class ApiClient {
     return this.put('/admin/settings/system', preferences);
   }
 
+  async getTaxSettings(): Promise<any> {
+    return this.get('/admin/settings/tax');
+  }
+
+  async updateTaxSettings(settings: any): Promise<any> {
+    return this.put('/admin/settings/tax', settings);
+  }
+
   async testEmailSettings(settings: any): Promise<any> {
     return this.post('/admin/settings/email/test', settings);
   }
