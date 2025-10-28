@@ -152,6 +152,7 @@ export const OrderManagement: React.FC = () => {
   const [refundAmount, setRefundAmount] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showManualOrderCreation, setShowManualOrderCreation] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -352,6 +353,39 @@ export const OrderManagement: React.FC = () => {
     queryClient.invalidateQueries(['order-stats']);
   };
 
+  const handleExportOrders = async (status?: string) => {
+    try {
+      setIsExporting(true);
+      const blob = await apiClient.exportOrders(status);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = status && status !== 'all' 
+        ? `orders-${status}-${timestamp}.csv` 
+        : `orders-all-${timestamp}.csv`;
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success(`Orders exported successfully (${status || 'all'})`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export orders');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Get status badge color and text
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: any; color: string }> = {
@@ -467,10 +501,43 @@ export const OrderManagement: React.FC = () => {
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={isExporting}>
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? 'Exporting...' : 'Export'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExportOrders()}>
+                <Download className="h-4 w-4 mr-2" />
+                Export All Orders
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExportOrders('pending')}>
+                Export Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportOrders('confirmed')}>
+                Export Confirmed
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportOrders('processing')}>
+                Export Processing
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportOrders('shipped')}>
+                Export Shipped
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportOrders('delivered')}>
+                Export Delivered
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExportOrders('cancelled')}>
+                Export Cancelled
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportOrders('refunded')}>
+                Export Refunded
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

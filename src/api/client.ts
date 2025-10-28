@@ -1054,6 +1054,31 @@ class ApiClient {
     return this.get('/admin/orders/stats');
   }
 
+  async exportOrders(status?: string): Promise<Blob> {
+    const url = `${this.baseUrl}/admin/orders/export${status ? `?status=${status}` : ''}`;
+    const token = TokenManager.getAccessToken();
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to export orders: ${errorText}`);
+    }
+
+    return response.blob();
+  }
+
   // Analytics endpoints
   async getDashboardAnalytics(days?: number): Promise<any> {
     return this.get('/admin/analytics/dashboard', { days });
