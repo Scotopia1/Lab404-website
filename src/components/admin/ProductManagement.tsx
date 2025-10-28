@@ -58,6 +58,9 @@ import { backendAuthService } from '@/lib/backendAuth';
 import { toast } from 'sonner';
 import { handleImageError, getFirstValidImage } from '@/lib/imageUtils';
 import { GoogleImageSearch } from '@/components/admin/GoogleImageSearch';
+import { TagsInput } from '@/components/admin/TagsInput';
+import { FeaturesEditor } from '@/components/admin/FeaturesEditor';
+import { SpecificationsEditor } from '@/components/admin/SpecificationsEditor';
 
 // Interfaces
 interface Product {
@@ -273,14 +276,56 @@ const ProductFormContent = React.memo<ProductFormContentProps>(({
         </div>
       </div>
 
+      {/* SKU and Barcode */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label htmlFor="sku">SKU</Label>
+          <Input
+            id="sku"
+            value={formData.sku}
+            onChange={(e) => handleFormChange('sku', e.target.value)}
+            placeholder="Product SKU"
+          />
+        </div>
+        <div>
+          <Label htmlFor="barcode">Barcode</Label>
+          <Input
+            id="barcode"
+            value={formData.barcode}
+            onChange={(e) => handleFormChange('barcode', e.target.value)}
+            placeholder="Product barcode"
+          />
+        </div>
+      </div>
+
       {/* Tags */}
       <div>
-        <Label htmlFor="tags">Tags (comma separated)</Label>
-        <Input
-          id="tags"
+        <TagsInput
           value={formData.tags}
-          onChange={(e) => handleFormChange('tags', e.target.value)}
-          placeholder="electronics, arduino, sensors"
+          onChange={(tags) => handleFormChange('tags', tags)}
+          suggestions={['electronics', 'arduino', 'sensors', 'raspberry-pi', 'diy', 'iot', 'robotics', 'maker']}
+          maxTags={20}
+          label="Product Tags"
+        />
+      </div>
+
+      {/* Features */}
+      <div className="pt-3 border-t">
+        <FeaturesEditor
+          features={formData.features}
+          onChange={(features) => handleFormChange('features', features)}
+          maxFeatures={15}
+          label="Product Features"
+        />
+      </div>
+
+      {/* Specifications */}
+      <div className="pt-3 border-t">
+        <SpecificationsEditor
+          specifications={formData.specifications}
+          onChange={(specs) => handleFormChange('specifications', specs)}
+          maxSpecs={20}
+          label="Product Specifications"
         />
       </div>
 
@@ -438,10 +483,10 @@ export const ProductManagement: React.FC = () => {
       unit: 'cm'
     },
     category_id: '',
-    tags: '',
+    tags: [] as string[],
     images: [] as string[],
-    specifications: [{ key: '', value: '' }] as Array<{ key: string; value: string }>,
-    features: [''] as string[],
+    specifications: [] as Array<{ id: string; name: string; value: string; group?: string }>,
+    features: [] as Array<{ id: string; value: string; isKey?: boolean }>,
     in_stock: true,
     stock_quantity: '',
     low_stock_threshold: '',
@@ -739,10 +784,10 @@ export const ProductManagement: React.FC = () => {
         unit: 'cm'
       },
       category_id: '',
-      tags: '',
+      tags: [],
       images: [],
-      specifications: [{ key: '', value: '' }],
-      features: [''],
+      specifications: [],
+      features: [],
       in_stock: true,
       stock_quantity: '',
       low_stock_threshold: '',
@@ -991,14 +1036,29 @@ export const ProductManagement: React.FC = () => {
     }
 
     setFormErrors(errors);
+    
+    // Show validation errors to user
+    if (Object.keys(errors).length > 0) {
+      const firstError = Object.values(errors)[0];
+      toast.error(firstError);
+    }
+    
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmitProduct = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    console.log('=== Form Submit Started ===');
+    console.log('Form Data:', formData);
 
+    if (!validateForm()) {
+      console.log('Validation failed');
+      console.log('Form Errors:', formErrors);
+      return;
+    }
+
+    console.log('Validation passed');
     setIsSubmitting(true);
 
     try {
@@ -1022,23 +1082,32 @@ export const ProductManagement: React.FC = () => {
             ? Number(formData.low_stock_threshold)
             : 5,
         track_inventory: formData.unlimited_stock ? false : formData.track_inventory,
-        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
-        features: formData.features.filter(f => f.trim()),
-        specifications: Object.fromEntries(
-          formData.specifications
-            .filter(s => s.key.trim() && s.value.trim())
-            .map(s => [s.key, s.value])
-        ),
+        tags: Array.isArray(formData.tags) ? formData.tags : [],
+        features: Array.isArray(formData.features) 
+          ? formData.features.map(f => typeof f === 'string' ? f : f.value).filter(Boolean)
+          : [],
+        specifications: Array.isArray(formData.specifications)
+          ? Object.fromEntries(
+              formData.specifications
+                .filter(s => s.name?.trim() && s.value?.trim())
+                .map(s => [s.name, s.value])
+            )
+          : {},
         // Ensure images is always an array
         images: Array.isArray(formData.images) ? formData.images : [],
       };
 
+      console.log('Product Data to submit:', productData);
+
       if (editingProduct) {
+        console.log('Updating product:', editingProduct.id);
         await updateProductMutation.mutateAsync({ id: editingProduct.id, data: productData });
       } else {
+        console.log('Creating new product');
         await createProductMutation.mutateAsync(productData);
       }
     } catch (error: any) {
+      console.error('Submit error:', error);
       // Handle validation errors
       if (error.statusCode === 422 && error.errors) {
         setFormErrors(error.errors);
@@ -1071,14 +1140,23 @@ export const ProductManagement: React.FC = () => {
         unit: 'cm'
       },
       category_id: product.category_id || '',
-      tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
-      images: Array.isArray(product.images) ? product.images : [], // Ensure images is an array
+      tags: Array.isArray(product.tags) ? product.tags : [],
+      images: Array.isArray(product.images) ? product.images : [],
       specifications: product.specifications && typeof product.specifications === 'object'
-        ? Object.entries(product.specifications).map(([key, value]) => ({ key, value: String(value) }))
-        : [{ key: '', value: '' }],
+        ? Object.entries(product.specifications).map(([name, value]) => ({
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name,
+            value: String(value),
+            group: 'General'
+          }))
+        : [],
       features: Array.isArray(product.features) && product.features.length > 0
-        ? product.features
-        : [''],
+        ? product.features.map((feat: string) => ({
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            value: feat,
+            isKey: false
+          }))
+        : [],
       in_stock: product.in_stock,
       stock_quantity: product.stock_quantity.toString(),
       low_stock_threshold: product.low_stock_threshold.toString(),

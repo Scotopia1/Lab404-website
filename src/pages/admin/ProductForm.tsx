@@ -11,6 +11,9 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AlibabaImport from '@/components/AlibabaImport';
 import { GoogleImageSearch } from '@/components/admin/GoogleImageSearch';
+import { TagsInput } from '@/components/admin/TagsInput';
+import { FeaturesEditor } from '@/components/admin/FeaturesEditor';
+import { SpecificationsEditor } from '@/components/admin/SpecificationsEditor';
 import { mockProducts, categories } from '@/lib/mockData';
 import { ImportedProduct } from '@/lib/types';
 
@@ -26,6 +29,11 @@ interface SpecificationItem {
   id: string;
   name: string;
   value: string;
+  group?: string;
+}
+
+interface FeatureItem extends ArrayItem {
+  isKey?: boolean;
 }
 
 interface FormData {
@@ -60,7 +68,7 @@ interface FormData {
 
   // Product Features
   specifications: SpecificationItem[];
-  features: ArrayItem[];
+  features: FeatureItem[];
 
   // SEO and Meta
   slug: string;
@@ -122,8 +130,8 @@ const ProductForm = () => {
     trackInventory: existingProduct?.trackInventory ?? false,
 
     // Product Features
-    specifications: existingProduct?.specifications ? existingProduct.specifications.map(spec => ({ id: generateId(), name: spec.name, value: spec.value })) : [{ id: generateId(), name: '', value: '' }],
-    features: existingProduct?.features ? existingProduct.features.map(feat => ({ id: generateId(), value: feat })) : [{ id: generateId(), value: '' }],
+    specifications: existingProduct?.specifications ? existingProduct.specifications.map(spec => ({ id: generateId(), name: spec.name, value: spec.value, group: spec.group || 'General' })) : [],
+    features: existingProduct?.features ? existingProduct.features.map(feat => ({ id: generateId(), value: feat, isKey: false })) : [],
 
     // SEO and Meta
     slug: existingProduct?.slug || '',
@@ -150,7 +158,7 @@ const ProductForm = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleArrayChange = useCallback((field: 'images' | 'videos' | 'tags' | 'features', id: string, value: string) => {
+  const handleArrayChange = useCallback((field: 'images' | 'videos', id: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].map((item) =>
@@ -159,23 +167,35 @@ const ProductForm = () => {
     }));
   }, []);
 
-  const handleSpecificationChange = useCallback((id: string, field: 'name' | 'value', value: string) => {
+  const handleTagsChange = useCallback((tags: string[]) => {
     setFormData(prev => ({
       ...prev,
-      specifications: prev.specifications.map((spec) =>
-        spec.id === id ? { ...spec, [field]: value } : spec
-      )
+      tags: tags.map(tag => ({ id: generateId(), value: tag }))
     }));
   }, []);
 
-  const addArrayItem = useCallback((field: 'images' | 'videos' | 'tags' | 'features' | 'specifications') => {
+  const handleFeaturesChange = useCallback((features: FeatureItem[]) => {
     setFormData(prev => ({
       ...prev,
-      [field]: [...prev[field], field === 'specifications' ? { id: generateId(), name: '', value: '' } : { id: generateId(), value: '' }]
+      features
     }));
   }, []);
 
-  const removeArrayItem = useCallback((field: 'images' | 'videos' | 'tags' | 'features' | 'specifications', id: string) => {
+  const handleSpecificationsChange = useCallback((specifications: SpecificationItem[]) => {
+    setFormData(prev => ({
+      ...prev,
+      specifications
+    }));
+  }, []);
+
+  const addArrayItem = useCallback((field: 'images' | 'videos') => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: [...prev[field], { id: generateId(), value: '' }]
+    }));
+  }, []);
+
+  const removeArrayItem = useCallback((field: 'images' | 'videos', id: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: prev[field].filter((item) => item.id !== id)
@@ -192,7 +212,7 @@ const ProductForm = () => {
       videos: formData.videos.map(item => item.value).filter(video => video.trim()),
       tags: formData.tags.map(item => item.value).filter(tag => tag.trim()),
       features: formData.features.map(item => item.value).filter(feature => feature.trim()),
-      specifications: formData.specifications.filter(spec => spec.name.trim() && spec.value.trim()).map(({ name, value }) => ({ name, value }))
+      specifications: formData.specifications.filter(spec => spec.name.trim() && spec.value.trim()).map(({ name, value, group }) => ({ name, value, group }))
     };
 
     console.log('Product data:', cleanedData);
@@ -241,9 +261,9 @@ const ProductForm = () => {
 
       // Product Features
       specifications: Array.isArray(importedProduct.specifications)
-        ? importedProduct.specifications.map(spec => ({ id: generateId(), name: spec.name, value: spec.value }))
-        : Object.entries(importedProduct.specifications || {}).map(([name, value]) => ({ id: generateId(), name, value: String(value) })),
-      features: (importedProduct.features || []).map(feat => ({ id: generateId(), value: feat })),
+        ? importedProduct.specifications.map(spec => ({ id: generateId(), name: spec.name, value: spec.value, group: spec.group || 'General' }))
+        : Object.entries(importedProduct.specifications || {}).map(([name, value]) => ({ id: generateId(), name, value: String(value), group: 'General' })),
+      features: (importedProduct.features || []).map(feat => ({ id: generateId(), value: feat, isKey: false })),
 
       // SEO and Meta
       slug: importedProduct.slug || '',
@@ -575,42 +595,12 @@ const ProductForm = () => {
                 <CardHeader>
                   <CardTitle>Specifications</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {formData.specifications.map((spec) => (
-                    <div key={spec.id} className="grid grid-cols-2 gap-4">
-                      <Input
-                        value={spec.name}
-                        onChange={(e) => handleSpecificationChange(spec.id, 'name', e.target.value)}
-                        placeholder="Specification name"
-                      />
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          value={spec.value}
-                          onChange={(e) => handleSpecificationChange(spec.id, 'value', e.target.value)}
-                          placeholder="Specification value"
-                          className="flex-1"
-                        />
-                        {formData.specifications.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeArrayItem('specifications', spec.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => addArrayItem('specifications')}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Specification
-                  </Button>
+                <CardContent>
+                  <SpecificationsEditor
+                    specifications={formData.specifications}
+                    onChange={handleSpecificationsChange}
+                    maxSpecs={30}
+                  />
                 </CardContent>
               </Card>
 
@@ -619,35 +609,12 @@ const ProductForm = () => {
                 <CardHeader>
                   <CardTitle>Product Features</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {formData.features.map((feature) => (
-                    <div key={feature.id} className="flex items-center space-x-2">
-                      <Input
-                        value={feature.value}
-                        onChange={(e) => handleArrayChange('features', feature.id, e.target.value)}
-                        placeholder="Enter product feature"
-                        className="flex-1"
-                      />
-                      {formData.features.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeArrayItem('features', feature.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => addArrayItem('features')}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Feature
-                  </Button>
+                <CardContent>
+                  <FeaturesEditor
+                    features={formData.features}
+                    onChange={handleFeaturesChange}
+                    maxFeatures={20}
+                  />
                 </CardContent>
               </Card>
 
@@ -656,35 +623,13 @@ const ProductForm = () => {
                 <CardHeader>
                   <CardTitle>Tags</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {formData.tags.map((tag) => (
-                    <div key={tag.id} className="flex items-center space-x-2">
-                      <Input
-                        value={tag.value}
-                        onChange={(e) => handleArrayChange('tags', tag.id, e.target.value)}
-                        placeholder="Enter tag"
-                        className="flex-1"
-                      />
-                      {formData.tags.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeArrayItem('tags', tag.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => addArrayItem('tags')}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Tag
-                  </Button>
+                <CardContent>
+                  <TagsInput
+                    value={formData.tags.map(tag => tag.value)}
+                    onChange={handleTagsChange}
+                    suggestions={['electronics', 'arduino', 'sensors', 'raspberry-pi', 'diy', 'iot', 'robotics', 'maker', 'esp32', 'microcontroller']}
+                    maxTags={20}
+                  />
                 </CardContent>
               </Card>
 
