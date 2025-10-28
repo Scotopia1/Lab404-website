@@ -323,14 +323,14 @@ const Blog = () => {
             )}
           </div>
 
-          <CardTitle className="text-xl hover:text-blue-600 transition-colors">
+          <CardTitle className="text-xl text-gray-900 hover:text-blue-600 transition-colors leading-snug">
             <Link to={`/blog/${post.slug}`} className="line-clamp-2">
               {post.title}
             </Link>
           </CardTitle>
 
           {post.excerpt && (
-            <CardDescription className="line-clamp-3 text-gray-600">
+            <CardDescription className="line-clamp-3 text-gray-600 leading-relaxed mt-2">
               {post.excerpt}
             </CardDescription>
           )}
@@ -346,33 +346,33 @@ const Blog = () => {
             ))}
           </div>
 
-          <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-4">
               {post.author && (
                 <div className="flex items-center space-x-2">
                   <Avatar className="h-6 w-6">
                     <AvatarImage src={post.author.avatar_url} alt={post.author.full_name} />
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
                       {post.author.full_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span>{post.author.full_name}</span>
+                  <span className="text-gray-700 font-medium">{post.author.full_name}</span>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 text-gray-500">
               {post.reading_time_minutes > 0 && (
                 <div className="flex items-center space-x-1">
                   <Clock className="h-4 w-4" />
-                  <span>{formatReadingTime(post.reading_time_minutes)}</span>
+                  <span className="font-medium">{formatReadingTime(post.reading_time_minutes)}</span>
                 </div>
               )}
 
               {post.view_count > 0 && (
                 <div className="flex items-center space-x-1">
                   <Eye className="h-4 w-4" />
-                  <span>{post.view_count}</span>
+                  <span className="font-medium">{post.view_count}</span>
                 </div>
               )}
             </div>

@@ -46,6 +46,10 @@ export interface Quotation {
   customer_phone: string | null;
   customer_company: string | null;
   customer_address: string | null;
+  customer_id: string | null;
+  customer_name_id: string | null;
+  customer_address_id: string | null;
+  customer_phone_id: string | null;
   status: QuotationStatus;
   valid_until: Date;
   subtotal: number;
@@ -82,6 +86,10 @@ export interface CreateQuotationInput {
   customer_phone?: string;
   customer_company?: string;
   customer_address?: string;
+  customer_id?: string;
+  customer_name_id?: string;
+  customer_address_id?: string;
+  customer_phone_id?: string;
   valid_until: Date;
   items: {
     product_id: string;
@@ -107,6 +115,10 @@ export interface UpdateQuotationInput {
   customer_phone?: string;
   customer_company?: string;
   customer_address?: string;
+  customer_id?: string;
+  customer_name_id?: string;
+  customer_address_id?: string;
+  customer_phone_id?: string;
   valid_until?: Date;
   items?: {
     id?: string;
@@ -175,6 +187,10 @@ export interface QuotationFormData {
   customer_phone: string;
   customer_company: string;
   customer_address: string;
+  customer_id: string | null;
+  customer_name_id: string | null;
+  customer_address_id: string | null;
+  customer_phone_id: string | null;
   valid_until: string; // ISO date string for form inputs
   items: QuotationFormItem[];
   discount_percentage: number;

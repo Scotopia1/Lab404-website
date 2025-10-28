@@ -51,8 +51,9 @@ import {
   Globe,
   ListChecks,
   Image as ImageIcon,
+  Loader2,
 } from 'lucide-react';
-import { apiClient } from '@/api/client';
+import { apiClient, TokenManager } from '@/api/client';
 import { backendAuthService } from '@/lib/backendAuth';
 import { toast } from 'sonner';
 import { handleImageError, getFirstValidImage } from '@/lib/imageUtils';
@@ -116,6 +117,263 @@ interface ProductStats {
   lowStock: number;
 }
 
+interface ProductFormContentProps {
+  formData: any;
+  formErrors: Record<string, string>;
+  handleFormChange: (field: string, value: any) => void;
+  categories: any[];
+  removeImage: (index: number) => void;
+  setShowGoogleImageSearch: (show: boolean) => void;
+  handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+// Extracted Product Form Component to prevent re-creation on every render
+const ProductFormContent = React.memo<ProductFormContentProps>(({
+  formData,
+  formErrors,
+  handleFormChange,
+  categories,
+  removeImage,
+  setShowGoogleImageSearch,
+  handleImageUpload,
+}) => (
+  <div className="max-h-[70vh] overflow-y-auto px-1">
+    <div className="space-y-4">
+      {/* Basic Information */}
+      <div>
+        <Label htmlFor="name">Product Name *</Label>
+        <Input
+          id="name"
+          value={formData.name}
+          onChange={(e) => handleFormChange('name', e.target.value)}
+          placeholder="Enter product name"
+        />
+        {formErrors.name && <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>}
+      </div>
+
+      <div>
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => handleFormChange('description', e.target.value)}
+          placeholder="Enter product description"
+          rows={3}
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <Label htmlFor="price">Price *</Label>
+          <Input
+            id="price"
+            type="number"
+            step="0.01"
+            value={formData.price}
+            onChange={(e) => handleFormChange('price', e.target.value)}
+            placeholder="0.00"
+          />
+          {formErrors.price && <p className="text-sm text-red-500 mt-1">{formErrors.price}</p>}
+        </div>
+        <div>
+          <Label htmlFor="compare_at_price">Compare Price</Label>
+          <Input
+            id="compare_at_price"
+            type="number"
+            step="0.01"
+            value={formData.compare_at_price}
+            onChange={(e) => handleFormChange('compare_at_price', e.target.value)}
+            placeholder="0.00"
+          />
+        </div>
+        <div>
+          <Label htmlFor="cost_price">Cost Price</Label>
+          <Input
+            id="cost_price"
+            type="number"
+            step="0.01"
+            value={formData.cost_price}
+            onChange={(e) => handleFormChange('cost_price', e.target.value)}
+            placeholder="0.00"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="category_id">Category *</Label>
+        <Select value={formData.category_id} onValueChange={(value) => handleFormChange('category_id', value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories?.map((category: any) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {formErrors.category_id && <p className="text-sm text-red-500 mt-1">{formErrors.category_id}</p>}
+      </div>
+
+      {/* Product Images */}
+      <div>
+        <Label>Product Images</Label>
+        <div className="space-y-3 mt-2">
+          {formData.images.length > 0 && (
+            <div className="grid grid-cols-4 gap-3">
+              {formData.images.map((image: string, index: number) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={image}
+                    alt={`Product ${index + 1}`}
+                    className="w-full h-24 object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeImage(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => document.getElementById('image-upload')?.click()}
+              className="flex-1"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload Images
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowGoogleImageSearch(true)}
+              className="flex-1"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Search Google Images
+            </Button>
+          </div>
+          <input
+            id="image-upload"
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleImageUpload}
+          />
+        </div>
+      </div>
+
+      {/* Tags */}
+      <div>
+        <Label htmlFor="tags">Tags (comma separated)</Label>
+        <Input
+          id="tags"
+          value={formData.tags}
+          onChange={(e) => handleFormChange('tags', e.target.value)}
+          placeholder="electronics, arduino, sensors"
+        />
+      </div>
+
+      {/* SEO Section */}
+      <div className="space-y-3 pt-3 border-t">
+        <h3 className="text-sm font-semibold text-gray-700">SEO Settings</h3>
+        <div>
+          <Label htmlFor="meta_title">Meta Title</Label>
+          <Input
+            id="meta_title"
+            value={formData.meta_title}
+            onChange={(e) => handleFormChange('meta_title', e.target.value)}
+            placeholder="SEO title for search engines (60 chars max)"
+            maxLength={60}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            {formData.meta_title.length}/60 characters
+          </p>
+          {formErrors.meta_title && <p className="text-sm text-red-500 mt-1">{formErrors.meta_title}</p>}
+        </div>
+        <div>
+          <Label htmlFor="meta_description">Meta Description</Label>
+          <Textarea
+            id="meta_description"
+            value={formData.meta_description}
+            onChange={(e) => handleFormChange('meta_description', e.target.value)}
+            placeholder="SEO description for search engines (160 chars max)"
+            rows={3}
+            maxLength={160}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            {formData.meta_description.length}/160 characters
+          </p>
+          {formErrors.meta_description && <p className="text-sm text-red-500 mt-1">{formErrors.meta_description}</p>}
+        </div>
+      </div>
+
+      {/* Inventory */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label htmlFor="stock_quantity">Stock Quantity</Label>
+          <Input
+            id="stock_quantity"
+            type="number"
+            value={formData.stock_quantity}
+            onChange={(e) => handleFormChange('stock_quantity', e.target.value)}
+            placeholder="0"
+            disabled={formData.unlimited_stock}
+          />
+        </div>
+        <div className="flex items-center space-x-2 mt-8">
+          <Switch
+            id="track_inventory"
+            checked={formData.track_inventory}
+            onCheckedChange={(checked) => handleFormChange('track_inventory', checked)}
+          />
+          <Label htmlFor="track_inventory">Track Inventory</Label>
+        </div>
+      </div>
+
+      {/* Status Switches */}
+      <div className="space-y-3 pt-3 border-t">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="featured">Featured Product</Label>
+          <Switch
+            id="featured"
+            checked={formData.featured}
+            onCheckedChange={(checked) => handleFormChange('featured', checked)}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="is_active">Active</Label>
+          <Switch
+            id="is_active"
+            checked={formData.is_active}
+            onCheckedChange={(checked) => handleFormChange('is_active', checked)}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="in_stock">In Stock</Label>
+          <Switch
+            id="in_stock"
+            checked={formData.in_stock}
+            onCheckedChange={(checked) => handleFormChange('in_stock', checked)}
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+));
+
+ProductFormContent.displayName = 'ProductFormContent';
+
 export const ProductManagement: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -139,6 +397,10 @@ export const ProductManagement: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showGoogleImageSearch, setShowGoogleImageSearch] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResults, setImportResults] = useState<any>(null);
 
   // Update filters when debounced search changes
   useEffect(() => {
@@ -290,6 +552,119 @@ export const ProductManagement: React.FC = () => {
     },
   });
 
+  // CSV Handlers
+  const handleExportCSV = async () => {
+    try {
+      toast.info('Preparing CSV export...');
+      const token = TokenManager.getAccessToken();
+      
+      // Build query params from current filters
+      const queryParams = new URLSearchParams();
+      if (filters.search) queryParams.append('search', filters.search);
+      if (filters.category) queryParams.append('category', filters.category);
+      if (filters.brand) queryParams.append('brand', filters.brand);
+      
+      const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/products/admin/csv/export?${queryParams.toString()}`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error('Export failed');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `lab404-products-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast.success('Products exported successfully');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export products');
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const token = TokenManager.getAccessToken();
+      const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/products/admin/csv/template`;
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error('Template download failed');
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'lab404-products-template.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast.success('Template downloaded successfully');
+    } catch (error) {
+      console.error('Template download error:', error);
+      toast.error('Failed to download template');
+    }
+  };
+
+  const handleImportCSV = async () => {
+    if (!csvFile) {
+      toast.error('Please select a CSV file');
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const text = await csvFile.text();
+      const token = TokenManager.getAccessToken();
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/products/admin/csv/import`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ csvContent: text }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (data.data?.errors) {
+          setImportResults({ success: false, errors: data.data.errors });
+          toast.error(`CSV validation failed: ${data.data.errors.length} errors found`);
+        } else {
+          throw new Error(data.message || 'Import failed');
+        }
+        return;
+      }
+      
+      setImportResults(data.data);
+      toast.success(`Import completed: ${data.data.successful} products imported successfully`);
+      queryClient.invalidateQueries(['admin-products']);
+      queryClient.invalidateQueries(['product-stats']);
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast.error(error.message || 'Failed to import CSV');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // Computed values
   const products = productsData?.data || [];
   const totalProducts = productsData?.pagination?.total || 0;
@@ -382,6 +757,13 @@ export const ProductManagement: React.FC = () => {
     });
     setFormErrors({});
   };
+
+  // Reset form when create dialog opens to ensure clean state
+  useEffect(() => {
+    if (showCreateDialog) {
+      resetForm();
+    }
+  }, [showCreateDialog]);
 
   const handleFormChange = (field: string, value: any) => {
     // When category_id changes, also update the category name
@@ -726,243 +1108,6 @@ export const ProductManagement: React.FC = () => {
     return <Badge variant="outline" className="border-green-500 text-green-600">In Stock</Badge>;
   };
 
-  // Product Form Dialog Content
-  const ProductFormContent = () => (
-    <div className="max-h-[70vh] overflow-y-auto px-1">
-      <div className="space-y-4">
-        {/* Basic Information */}
-        <div>
-          <Label htmlFor="name">Product Name *</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => handleFormChange('name', e.target.value)}
-            placeholder="Enter product name"
-          />
-          {formErrors.name && <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>}
-        </div>
-
-        <div>
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            value={formData.description}
-            onChange={(e) => handleFormChange('description', e.target.value)}
-            placeholder="Enter product description"
-            rows={3}
-          />
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <Label htmlFor="price">Price *</Label>
-            <Input
-              id="price"
-              type="number"
-              step="0.01"
-              value={formData.price}
-              onChange={(e) => handleFormChange('price', e.target.value)}
-              placeholder="0.00"
-            />
-            {formErrors.price && <p className="text-sm text-red-500 mt-1">{formErrors.price}</p>}
-          </div>
-          <div>
-            <Label htmlFor="compare_at_price">Compare Price</Label>
-            <Input
-              id="compare_at_price"
-              type="number"
-              step="0.01"
-              value={formData.compare_at_price}
-              onChange={(e) => handleFormChange('compare_at_price', e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
-          <div>
-            <Label htmlFor="cost_price">Cost Price</Label>
-            <Input
-              id="cost_price"
-              type="number"
-              step="0.01"
-              value={formData.cost_price}
-              onChange={(e) => handleFormChange('cost_price', e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="category_id">Category *</Label>
-          <Select value={formData.category_id} onValueChange={(value) => handleFormChange('category_id', value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories?.map((category: any) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {formErrors.category_id && <p className="text-sm text-red-500 mt-1">{formErrors.category_id}</p>}
-        </div>
-
-        {/* Product Images */}
-        <div>
-          <Label>Product Images</Label>
-          <div className="space-y-3 mt-2">
-            {formData.images.length > 0 && (
-              <div className="grid grid-cols-4 gap-3">
-                {formData.images.map((image, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={image}
-                      alt={`Product ${index + 1}`}
-                      className="w-full h-24 object-cover rounded-lg border"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImage(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => document.getElementById('image-upload')?.click()}
-                className="flex-1"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Images
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowGoogleImageSearch(true)}
-                className="flex-1"
-              >
-                <ImageIcon className="h-4 w-4 mr-2" />
-                Search Google Images
-              </Button>
-            </div>
-            <input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleImageUpload}
-            />
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div>
-          <Label htmlFor="tags">Tags (comma separated)</Label>
-          <Input
-            id="tags"
-            value={formData.tags}
-            onChange={(e) => handleFormChange('tags', e.target.value)}
-            placeholder="electronics, arduino, sensors"
-          />
-        </div>
-
-        {/* SEO Section */}
-        <div className="space-y-3 pt-3 border-t">
-          <h3 className="text-sm font-semibold text-gray-700">SEO Settings</h3>
-          <div>
-            <Label htmlFor="meta_title">Meta Title</Label>
-            <Input
-              id="meta_title"
-              value={formData.meta_title}
-              onChange={(e) => handleFormChange('meta_title', e.target.value)}
-              placeholder="SEO title for search engines (60 chars max)"
-              maxLength={60}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {formData.meta_title.length}/60 characters
-            </p>
-            {formErrors.meta_title && <p className="text-sm text-red-500 mt-1">{formErrors.meta_title}</p>}
-          </div>
-          <div>
-            <Label htmlFor="meta_description">Meta Description</Label>
-            <Textarea
-              id="meta_description"
-              value={formData.meta_description}
-              onChange={(e) => handleFormChange('meta_description', e.target.value)}
-              placeholder="SEO description for search engines (160 chars max)"
-              rows={3}
-              maxLength={160}
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {formData.meta_description.length}/160 characters
-            </p>
-            {formErrors.meta_description && <p className="text-sm text-red-500 mt-1">{formErrors.meta_description}</p>}
-          </div>
-        </div>
-
-        {/* Inventory */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="stock_quantity">Stock Quantity</Label>
-            <Input
-              id="stock_quantity"
-              type="number"
-              value={formData.stock_quantity}
-              onChange={(e) => handleFormChange('stock_quantity', e.target.value)}
-              placeholder="0"
-              disabled={formData.unlimited_stock}
-            />
-          </div>
-          <div className="flex items-center space-x-2 mt-8">
-            <Switch
-              id="track_inventory"
-              checked={formData.track_inventory}
-              onCheckedChange={(checked) => handleFormChange('track_inventory', checked)}
-            />
-            <Label htmlFor="track_inventory">Track Inventory</Label>
-          </div>
-        </div>
-
-        {/* Status Switches */}
-        <div className="space-y-3 pt-3 border-t">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="featured">Featured Product</Label>
-            <Switch
-              id="featured"
-              checked={formData.featured}
-              onCheckedChange={(checked) => handleFormChange('featured', checked)}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="is_active">Active</Label>
-            <Switch
-              id="is_active"
-              checked={formData.is_active}
-              onCheckedChange={(checked) => handleFormChange('is_active', checked)}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="in_stock">In Stock</Label>
-            <Switch
-              id="in_stock"
-              checked={formData.in_stock}
-              onCheckedChange={(checked) => handleFormChange('in_stock', checked)}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -981,6 +1126,31 @@ export const ProductManagement: React.FC = () => {
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${productsLoading ? 'animate-spin' : ''}`} />
             Refresh
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export to CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDownloadTemplate}>
+                <Download className="h-4 w-4 mr-2" />
+                Download CSV Template
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="outline"
+            onClick={() => setShowImportDialog(true)}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Import CSV
           </Button>
           <Button
             variant="outline"
@@ -1556,7 +1726,15 @@ export const ProductManagement: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitProduct}>
-            <ProductFormContent />
+            <ProductFormContent
+              formData={formData}
+              formErrors={formErrors}
+              handleFormChange={handleFormChange}
+              categories={categories || []}
+              removeImage={removeImage}
+              setShowGoogleImageSearch={setShowGoogleImageSearch}
+              handleImageUpload={handleImageUpload}
+            />
             <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>
                 Cancel
@@ -1579,7 +1757,15 @@ export const ProductManagement: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitProduct}>
-            <ProductFormContent />
+            <ProductFormContent
+              formData={formData}
+              formErrors={formErrors}
+              handleFormChange={handleFormChange}
+              categories={categories || []}
+              removeImage={removeImage}
+              setShowGoogleImageSearch={setShowGoogleImageSearch}
+              handleImageUpload={handleImageUpload}
+            />
             <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={() => setShowEditDialog(false)}>
                 Cancel
@@ -1601,6 +1787,143 @@ export const ProductManagement: React.FC = () => {
         maxSelections={10}
         initialQuery={formData.name}
       />
+
+      {/* CSV Import Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={(open) => {
+        setShowImportDialog(open);
+        if (!open) {
+          setCsvFile(null);
+          setImportResults(null);
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Import Products from CSV</DialogTitle>
+            <DialogDescription>
+              Upload a CSV file to bulk import or update products
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* File Upload */}
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+              <div className="text-center">
+                <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="mt-4">
+                  <label htmlFor="csv-file" className="cursor-pointer">
+                    <span className="mt-2 block text-sm font-medium text-gray-900">
+                      {csvFile ? csvFile.name : 'Choose a CSV file'}
+                    </span>
+                    <input
+                      id="csv-file"
+                      name="csv-file"
+                      type="file"
+                      accept=".csv"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setCsvFile(file);
+                          setImportResults(null);
+                        }
+                      }}
+                    />
+                  </label>
+                  <p className="mt-1 text-xs text-gray-500">
+                    CSV file up to 10MB
+                  </p>
+                </div>
+                <div className="mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('csv-file')?.click()}
+                  >
+                    Select File
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Import Results */}
+            {importResults && (
+              <div className={`p-4 rounded-lg ${importResults.success === false ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                <h4 className="font-semibold mb-2">
+                  {importResults.success === false ? 'Validation Errors' : 'Import Results'}
+                </h4>
+                {importResults.success === false ? (
+                  <ul className="text-sm text-red-700 space-y-1">
+                    {importResults.errors?.map((error: string, index: number) => (
+                      <li key={index}>• {error}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-sm space-y-2">
+                    <p className="text-green-700">
+                      <strong>Total:</strong> {importResults.total} products
+                    </p>
+                    <p className="text-green-700">
+                      <strong>Successful:</strong> {importResults.successful} imported
+                    </p>
+                    {importResults.failed > 0 && (
+                      <div>
+                        <p className="text-red-700">
+                          <strong>Failed:</strong> {importResults.failed} products
+                        </p>
+                        <ul className="text-red-600 mt-1 space-y-1">
+                          {importResults.results?.failed?.map((item: any, index: number) => (
+                            <li key={index}>• {item.name}: {item.error}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Instructions */}
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-blue-900 mb-2">Instructions:</h4>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Download the CSV template to see the required format</li>
+                <li>• Required fields: name, price, category</li>
+                <li>• Use pipe (|) to separate multiple values (tags, images, features)</li>
+                <li>• Products with existing SKU will be updated</li>
+                <li>• New products will be created automatically</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowImportDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleImportCSV}
+              disabled={!csvFile || isImporting}
+            >
+              {isImporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import Products
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

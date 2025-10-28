@@ -187,6 +187,10 @@ export const quotationsApi = {
       customer_phone: original.customer_phone || undefined,
       customer_company: original.customer_company || undefined,
       customer_address: original.customer_address || undefined,
+      customer_id: original.customer_id || undefined,
+      customer_name_id: original.customer_name_id || undefined,
+      customer_address_id: original.customer_address_id || undefined,
+      customer_phone_id: original.customer_phone_id || undefined,
       valid_until: futureDate,
       items: original.items.map(item => {
         // Same logic for item-level discounts

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Save, Plus, X, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,20 @@ import AlibabaImport from '@/components/AlibabaImport';
 import { GoogleImageSearch } from '@/components/admin/GoogleImageSearch';
 import { mockProducts, categories } from '@/lib/mockData';
 import { ImportedProduct } from '@/lib/types';
+
+// Helper to generate unique IDs
+const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+interface ArrayItem {
+  id: string;
+  value: string;
+}
+
+interface SpecificationItem {
+  id: string;
+  name: string;
+  value: string;
+}
 
 interface FormData {
   // Basic Information
@@ -32,11 +46,11 @@ interface FormData {
   // Category and Organization
   categoryId: string;
   category: string;
-  tags: string[];
+  tags: ArrayItem[];
 
   // Media
-  images: string[];
-  videos: string[];
+  images: ArrayItem[];
+  videos: ArrayItem[];
 
   // Inventory
   inStock: boolean;
@@ -45,8 +59,8 @@ interface FormData {
   trackInventory: boolean;
 
   // Product Features
-  specifications: { name: string; value: string }[];
-  features: string[];
+  specifications: SpecificationItem[];
+  features: ArrayItem[];
 
   // SEO and Meta
   slug: string;
@@ -95,11 +109,11 @@ const ProductForm = () => {
     // Category and Organization
     categoryId: existingProduct?.categoryId || '',
     category: existingProduct?.category || '',
-    tags: existingProduct?.tags || [''],
+    tags: existingProduct?.tags ? existingProduct.tags.map(tag => ({ id: generateId(), value: tag })) : [{ id: generateId(), value: '' }],
 
     // Media
-    images: existingProduct?.images || [''],
-    videos: existingProduct?.videos || [''],
+    images: existingProduct?.images ? existingProduct.images.map(img => ({ id: generateId(), value: img })) : [{ id: generateId(), value: '' }],
+    videos: existingProduct?.videos ? existingProduct.videos.map(vid => ({ id: generateId(), value: vid })) : [{ id: generateId(), value: '' }],
 
     // Inventory
     inStock: existingProduct?.inStock ?? true,
@@ -108,8 +122,8 @@ const ProductForm = () => {
     trackInventory: existingProduct?.trackInventory ?? false,
 
     // Product Features
-    specifications: existingProduct?.specifications || [{ name: '', value: '' }],
-    features: existingProduct?.features || [''],
+    specifications: existingProduct?.specifications ? existingProduct.specifications.map(spec => ({ id: generateId(), name: spec.name, value: spec.value })) : [{ id: generateId(), name: '', value: '' }],
+    features: existingProduct?.features ? existingProduct.features.map(feat => ({ id: generateId(), value: feat })) : [{ id: generateId(), value: '' }],
 
     // SEO and Meta
     slug: existingProduct?.slug || '',
@@ -132,53 +146,53 @@ const ProductForm = () => {
     reviewCount: existingProduct?.reviewCount || 0
   });
 
-  const handleInputChange = (field: keyof FormData, value: string | number | boolean) => {
+  const handleInputChange = useCallback((field: keyof FormData, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  }, []);
 
-  const handleArrayChange = (field: 'images' | 'videos' | 'tags' | 'features', index: number, value: string) => {
+  const handleArrayChange = useCallback((field: 'images' | 'videos' | 'tags' | 'features', id: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: prev[field].map((item, i) =>
-        i === index ? value : item
+      [field]: prev[field].map((item) =>
+        item.id === id ? { ...item, value } : item
       )
     }));
-  };
+  }, []);
 
-  const handleSpecificationChange = (index: number, field: 'name' | 'value', value: string) => {
+  const handleSpecificationChange = useCallback((id: string, field: 'name' | 'value', value: string) => {
     setFormData(prev => ({
       ...prev,
-      specifications: prev.specifications.map((spec, i) =>
-        i === index ? { ...spec, [field]: value } : spec
+      specifications: prev.specifications.map((spec) =>
+        spec.id === id ? { ...spec, [field]: value } : spec
       )
     }));
-  };
+  }, []);
 
-  const addArrayItem = (field: 'images' | 'videos' | 'tags' | 'features' | 'specifications') => {
+  const addArrayItem = useCallback((field: 'images' | 'videos' | 'tags' | 'features' | 'specifications') => {
     setFormData(prev => ({
       ...prev,
-      [field]: [...prev[field], field === 'specifications' ? { name: '', value: '' } : ''] as string[] | { name: string; value: string }[]
+      [field]: [...prev[field], field === 'specifications' ? { id: generateId(), name: '', value: '' } : { id: generateId(), value: '' }]
     }));
-  };
+  }, []);
 
-  const removeArrayItem = (field: 'images' | 'videos' | 'tags' | 'features' | 'specifications', index: number) => {
+  const removeArrayItem = useCallback((field: 'images' | 'videos' | 'tags' | 'features' | 'specifications', id: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: prev[field].filter((_, i) => i !== index)
+      [field]: prev[field].filter((item) => item.id !== id)
     }));
-  };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Filter out empty values
+    // Filter out empty values and extract values from ArrayItems
     const cleanedData = {
       ...formData,
-      images: formData.images.filter(img => img.trim()),
-      videos: formData.videos.filter(video => video.trim()),
-      tags: formData.tags.filter(tag => tag.trim()),
-      features: formData.features.filter(feature => feature.trim()),
-      specifications: formData.specifications.filter(spec => spec.name.trim() && spec.value.trim())
+      images: formData.images.map(item => item.value).filter(img => img.trim()),
+      videos: formData.videos.map(item => item.value).filter(video => video.trim()),
+      tags: formData.tags.map(item => item.value).filter(tag => tag.trim()),
+      features: formData.features.map(item => item.value).filter(feature => feature.trim()),
+      specifications: formData.specifications.filter(spec => spec.name.trim() && spec.value.trim()).map(({ name, value }) => ({ name, value }))
     };
 
     console.log('Product data:', cleanedData);
@@ -189,7 +203,7 @@ const ProductForm = () => {
   const handleGoogleImagesSelected = (imageUrls: string[]) => {
     setFormData(prev => ({
       ...prev,
-      images: [...prev.images.filter(img => img.trim()), ...imageUrls]
+      images: [...prev.images.filter(img => img.value.trim()), ...imageUrls.map(url => ({ id: generateId(), value: url }))]
     }));
     setShowGoogleImageSearch(false);
   };
@@ -213,11 +227,11 @@ const ProductForm = () => {
       // Category and Organization
       categoryId: importedProduct.categoryId || '',
       category: importedProduct.category,
-      tags: importedProduct.tags || [],
+      tags: (importedProduct.tags || []).map(tag => ({ id: generateId(), value: tag })),
 
       // Media
-      images: importedProduct.images,
-      videos: importedProduct.videos || [],
+      images: importedProduct.images.map(img => ({ id: generateId(), value: img })),
+      videos: (importedProduct.videos || []).map(vid => ({ id: generateId(), value: vid })),
 
       // Inventory
       inStock: importedProduct.inStock,
@@ -227,9 +241,9 @@ const ProductForm = () => {
 
       // Product Features
       specifications: Array.isArray(importedProduct.specifications)
-        ? importedProduct.specifications
-        : Object.entries(importedProduct.specifications || {}).map(([name, value]) => ({ name, value: String(value) })),
-      features: importedProduct.features || [],
+        ? importedProduct.specifications.map(spec => ({ id: generateId(), name: spec.name, value: spec.value }))
+        : Object.entries(importedProduct.specifications || {}).map(([name, value]) => ({ id: generateId(), name, value: String(value) })),
+      features: (importedProduct.features || []).map(feat => ({ id: generateId(), value: feat })),
 
       // SEO and Meta
       slug: importedProduct.slug || '',
@@ -466,11 +480,11 @@ const ProductForm = () => {
                   <CardTitle>Product Images</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {formData.images.map((image, index) => (
-                    <div key={index} className="flex items-center space-x-2">
+                  {formData.images.map((image) => (
+                    <div key={image.id} className="flex items-center space-x-2">
                       <Input
-                        value={image}
-                        onChange={(e) => handleArrayChange('images', index, e.target.value)}
+                        value={image.value}
+                        onChange={(e) => handleArrayChange('images', image.id, e.target.value)}
                         placeholder="Enter image URL"
                         className="flex-1"
                       />
@@ -479,7 +493,7 @@ const ProductForm = () => {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeArrayItem('images', index)}
+                          onClick={() => removeArrayItem('images', image.id)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -525,11 +539,11 @@ const ProductForm = () => {
                   <CardTitle>Product Videos</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {formData.videos.map((video, index) => (
-                    <div key={index} className="flex items-center space-x-2">
+                  {formData.videos.map((video) => (
+                    <div key={video.id} className="flex items-center space-x-2">
                       <Input
-                        value={video}
-                        onChange={(e) => handleArrayChange('videos', index, e.target.value)}
+                        value={video.value}
+                        onChange={(e) => handleArrayChange('videos', video.id, e.target.value)}
                         placeholder="Enter video URL"
                         className="flex-1"
                       />
@@ -538,7 +552,7 @@ const ProductForm = () => {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeArrayItem('videos', index)}
+                          onClick={() => removeArrayItem('videos', video.id)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -562,17 +576,17 @@ const ProductForm = () => {
                   <CardTitle>Specifications</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {formData.specifications.map((spec, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-4">
+                  {formData.specifications.map((spec) => (
+                    <div key={spec.id} className="grid grid-cols-2 gap-4">
                       <Input
                         value={spec.name}
-                        onChange={(e) => handleSpecificationChange(index, 'name', e.target.value)}
+                        onChange={(e) => handleSpecificationChange(spec.id, 'name', e.target.value)}
                         placeholder="Specification name"
                       />
                       <div className="flex items-center space-x-2">
                         <Input
                           value={spec.value}
-                          onChange={(e) => handleSpecificationChange(index, 'value', e.target.value)}
+                          onChange={(e) => handleSpecificationChange(spec.id, 'value', e.target.value)}
                           placeholder="Specification value"
                           className="flex-1"
                         />
@@ -581,7 +595,7 @@ const ProductForm = () => {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeArrayItem('specifications', index)}
+                            onClick={() => removeArrayItem('specifications', spec.id)}
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -606,11 +620,11 @@ const ProductForm = () => {
                   <CardTitle>Product Features</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {formData.features.map((feature, index) => (
-                    <div key={index} className="flex items-center space-x-2">
+                  {formData.features.map((feature) => (
+                    <div key={feature.id} className="flex items-center space-x-2">
                       <Input
-                        value={feature}
-                        onChange={(e) => handleArrayChange('features', index, e.target.value)}
+                        value={feature.value}
+                        onChange={(e) => handleArrayChange('features', feature.id, e.target.value)}
                         placeholder="Enter product feature"
                         className="flex-1"
                       />
@@ -619,7 +633,7 @@ const ProductForm = () => {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeArrayItem('features', index)}
+                          onClick={() => removeArrayItem('features', feature.id)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -643,11 +657,11 @@ const ProductForm = () => {
                   <CardTitle>Tags</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {formData.tags.map((tag, index) => (
-                    <div key={index} className="flex items-center space-x-2">
+                  {formData.tags.map((tag) => (
+                    <div key={tag.id} className="flex items-center space-x-2">
                       <Input
-                        value={tag}
-                        onChange={(e) => handleArrayChange('tags', index, e.target.value)}
+                        value={tag.value}
+                        onChange={(e) => handleArrayChange('tags', tag.id, e.target.value)}
                         placeholder="Enter tag"
                         className="flex-1"
                       />
@@ -656,7 +670,7 @@ const ProductForm = () => {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeArrayItem('tags', index)}
+                          onClick={() => removeArrayItem('tags', tag.id)}
                         >
                           <X className="h-4 w-4" />
                         </Button>

@@ -17,6 +17,8 @@ import {
   X,
   Calculator
 } from 'lucide-react';
+import CustomerSearchSelect from '@/components/admin/CustomerSearchSelect';
+import CustomerDetailsDisplay from '@/components/admin/CustomerDetailsDisplay';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -90,6 +92,10 @@ const QuotationForm: React.FC = () => {
     customer_phone: '',
     customer_company: '',
     customer_address: '',
+    customer_id: null,
+    customer_name_id: null,
+    customer_address_id: null,
+    customer_phone_id: null,
     valid_until: '',
     items: [],
     discount_percentage: 0,
@@ -101,6 +107,9 @@ const QuotationForm: React.FC = () => {
     internal_notes: '',
     terms_and_conditions: DEFAULT_TERMS,
   });
+
+  // Customer selection state
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -124,6 +133,10 @@ const QuotationForm: React.FC = () => {
         customer_phone: quotation.customer_phone || '',
         customer_company: quotation.customer_company || '',
         customer_address: quotation.customer_address || '',
+        customer_id: quotation.customer_id,
+        customer_name_id: quotation.customer_name_id,
+        customer_address_id: quotation.customer_address_id,
+        customer_phone_id: quotation.customer_phone_id,
         valid_until: formattedDate,
         items: quotation.items.map(item => ({
           id: item.id,
@@ -146,6 +159,11 @@ const QuotationForm: React.FC = () => {
         internal_notes: quotation.internal_notes || '',
         terms_and_conditions: quotation.terms_and_conditions || DEFAULT_TERMS,
       });
+
+      // Set selected customer ID if quotation has one
+      if (quotation.customer_id) {
+        setSelectedCustomerId(quotation.customer_id);
+      }
     } catch (err) {
       console.error('Error loading quotation:', err);
       setError('Failed to load quotation. Please try again.');
@@ -344,6 +362,10 @@ const QuotationForm: React.FC = () => {
         customer_phone: formData.customer_phone.trim() || undefined,
         customer_company: formData.customer_company.trim() || undefined,
         customer_address: formData.customer_address.trim() || undefined,
+        customer_id: formData.customer_id || undefined,
+        customer_name_id: formData.customer_name_id || undefined,
+        customer_address_id: formData.customer_address_id || undefined,
+        customer_phone_id: formData.customer_phone_id || undefined,
         valid_until: new Date(formData.valid_until),
         items: formData.items.map(item => ({
           ...(item.id && { id: item.id }),
@@ -472,67 +494,92 @@ const QuotationForm: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="customer_name">Customer Name *</Label>
-                    <Input
-                      id="customer_name"
-                      value={formData.customer_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
-                      placeholder="Enter customer name"
-                      className={errors.customer_name ? 'border-red-500' : ''}
-                    />
-                    {errors.customer_name && (
-                      <p className="text-sm text-red-600 mt-1">{errors.customer_name}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="customer_email">Email *</Label>
-                    <Input
-                      id="customer_email"
-                      type="email"
-                      value={formData.customer_email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customer_email: e.target.value }))}
-                      placeholder="Enter email address"
-                      className={errors.customer_email ? 'border-red-500' : ''}
-                    />
-                    {errors.customer_email && (
-                      <p className="text-sm text-red-600 mt-1">{errors.customer_email}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="customer_phone">Phone</Label>
-                    <Input
-                      id="customer_phone"
-                      value={formData.customer_phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customer_phone: e.target.value }))}
-                      placeholder="Enter phone number"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="customer_company">Company</Label>
-                    <Input
-                      id="customer_company"
-                      value={formData.customer_company}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customer_company: e.target.value }))}
-                      placeholder="Enter company name"
-                    />
-                  </div>
-                </div>
-
                 <div>
-                  <Label htmlFor="customer_address">Address</Label>
-                  <Textarea
-                    id="customer_address"
-                    value={formData.customer_address}
-                    onChange={(e) => setFormData(prev => ({ ...prev, customer_address: e.target.value }))}
-                    placeholder="Enter customer address"
-                    rows={3}
+                  <Label>Select Registered Customer</Label>
+                  <CustomerSearchSelect
+                    value={selectedCustomerId}
+                    onValueChange={(customerId, customer) => {
+                      setSelectedCustomerId(customerId);
+                      if (customer) {
+                        setFormData(prev => ({
+                          ...prev,
+                          customer_email: customer.email,
+                          customer_id: customerId,
+                        }));
+                      } else {
+                        // Clear customer selection
+                        setFormData(prev => ({
+                          ...prev,
+                          customer_name: '',
+                          customer_email: '',
+                          customer_phone: '',
+                          customer_address: '',
+                          customer_id: null,
+                          customer_name_id: null,
+                          customer_address_id: null,
+                          customer_phone_id: null,
+                        }));
+                      }
+                    }}
                   />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Search for a registered customer to auto-fill their details
+                  </p>
                 </div>
+
+                {selectedCustomerId && (
+                  <CustomerDetailsDisplay
+                    customerId={selectedCustomerId}
+                    selectedNameId={formData.customer_name_id}
+                    selectedAddressId={formData.customer_address_id}
+                    selectedPhoneId={formData.customer_phone_id}
+                    onNameChange={(nameId, name) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        customer_name_id: nameId,
+                        customer_name: name,
+                      }));
+                    }}
+                    onAddressChange={(addressId, address) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        customer_address_id: addressId,
+                        customer_address: address,
+                      }));
+                    }}
+                    onPhoneChange={(phoneId, phone) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        customer_phone_id: phoneId,
+                        customer_phone: phone,
+                      }));
+                    }}
+                  />
+                )}
+
+                {/* Show current customer info summary */}
+                {formData.customer_name && (
+                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                    <h4 className="font-medium text-gray-900">Customer Summary</h4>
+                    <div className="text-sm space-y-1">
+                      <p><span className="text-gray-600">Name:</span> {formData.customer_name}</p>
+                      <p><span className="text-gray-600">Email:</span> {formData.customer_email}</p>
+                      {formData.customer_phone && (
+                        <p><span className="text-gray-600">Phone:</span> {formData.customer_phone}</p>
+                      )}
+                      {formData.customer_address && (
+                        <p><span className="text-gray-600">Address:</span> {formData.customer_address}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {errors.customer_name && (
+                  <p className="text-sm text-red-600 mt-1">{errors.customer_name}</p>
+                )}
+                {errors.customer_email && (
+                  <p className="text-sm text-red-600 mt-1">{errors.customer_email}</p>
+                )}
               </CardContent>
             </Card>
 

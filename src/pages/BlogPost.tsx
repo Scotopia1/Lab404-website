@@ -1,9 +1,10 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, User, Tag, Clock, Eye, Share2, Facebook, Twitter, Linkedin, Copy } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Tag, Clock, Eye, Share2, Facebook, Twitter, Linkedin, Copy, Star } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
+import '@/styles/blog.css';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -207,64 +208,65 @@ const BlogPostPage = () => {
               {post.category && (
                 <Link
                   to={`/blog?category=${post.category.id}`}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  className="text-blue-600 hover:text-blue-700 font-semibold text-sm uppercase tracking-wider transition-colors"
                 >
                   {post.category.name}
                 </Link>
               )}
               {post.is_featured && (
-                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 font-semibold">
+                  <Star className="h-3 w-3 mr-1 fill-yellow-600" />
                   Featured
                 </Badge>
               )}
             </div>
 
             {/* Title */}
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight tracking-tight">
               {post.title}
             </h1>
 
             {/* Excerpt */}
             {post.excerpt && (
-              <p className="text-xl text-gray-600 mb-6 leading-relaxed">
+              <p className="text-xl text-gray-600 mb-6 leading-relaxed font-light">
                 {post.excerpt}
               </p>
             )}
 
             {/* Meta Information */}
-            <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-gray-500">
+            <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
               <div className="flex items-center space-x-6">
                 {post.author && (
-                  <div className="flex items-center space-x-2">
-                    <Avatar className="h-8 w-8">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10 ring-2 ring-blue-100">
                       <AvatarImage src={post.author.avatar_url} alt={post.author.full_name} />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
                         {post.author.full_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <div className="font-medium text-gray-900">{post.author.full_name}</div>
-                      <div className="text-gray-500">Author</div>
+                      <div className="font-semibold text-gray-900">{post.author.full_name}</div>
+                      <div className="text-gray-500 text-xs">Author</div>
                     </div>
                   </div>
                 )}
 
-                <div className="flex items-center space-x-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>{formatDate(post.published_at || post.created_at)}</span>
+                <div className="flex items-center space-x-1 text-gray-600">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  <span className="font-medium">{formatDate(post.published_at || post.created_at)}</span>
                 </div>
 
                 {post.reading_time_minutes > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{formatReadingTime(post.reading_time_minutes)}</span>
+                  <div className="flex items-center space-x-1 text-gray-600">
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    <span className="font-medium">{formatReadingTime(post.reading_time_minutes)}</span>
                   </div>
                 )}
 
                 {post.view_count > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <Eye className="h-4 w-4" />
-                    <span>{post.view_count} views</span>
+                  <div className="flex items-center space-x-1 text-gray-600">
+                    <Eye className="h-4 w-4 text-gray-400" />
+                    <span className="font-medium">{post.view_count} views</span>
                   </div>
                 )}
               </div>
@@ -292,7 +294,7 @@ const BlogPostPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="prose prose-lg max-w-none mb-8"
+            className="blog-content prose prose-lg max-w-none mb-8"
             dangerouslySetInnerHTML={{ __html: post.content }}
           />
 
@@ -304,17 +306,22 @@ const BlogPostPage = () => {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="mb-8"
             >
-              <Separator className="mb-4" />
-              <div className="flex flex-wrap gap-2">
-                <span className="text-sm font-medium text-gray-700 mr-2">Tags:</span>
+              <Separator className="mb-6" />
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm font-semibold text-gray-700 mr-2 flex items-center">
+                  <Tag className="h-4 w-4 mr-1 text-gray-500" />
+                  Tags:
+                </span>
                 {post.tags.map((tag, index) => (
                   <Link
                     key={index}
                     to={`/blog?search=${encodeURIComponent(tag)}`}
                     className="inline-flex items-center"
                   >
-                    <Badge variant="outline" className="hover:bg-blue-50 hover:border-blue-300 transition-colors">
-                      <Tag className="h-3 w-3 mr-1" />
+                    <Badge 
+                      variant="outline" 
+                      className="hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-colors border-gray-300 text-gray-700"
+                    >
                       {tag}
                     </Badge>
                   </Link>
@@ -332,7 +339,7 @@ const BlogPostPage = () => {
               className="mt-12"
             >
               <Separator className="mb-8" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Related Articles</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-6 tracking-tight">Related Articles</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {relatedPosts.map((relatedPost) => (
                   <Card key={relatedPost.id} className="hover:shadow-lg transition-shadow">
@@ -357,11 +364,11 @@ const BlogPostPage = () => {
                     </CardHeader>
                     <CardContent className="pt-0">
                       {relatedPost.excerpt && (
-                        <p className="text-gray-600 text-sm line-clamp-3 mb-3">
+                        <p className="text-gray-600 text-sm line-clamp-3 mb-3 leading-relaxed">
                           {relatedPost.excerpt}
                         </p>
                       )}
-                      <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
                         <span>{formatDate(relatedPost.published_at || relatedPost.created_at)}</span>
                         {relatedPost.reading_time_minutes > 0 && (
                           <span>{formatReadingTime(relatedPost.reading_time_minutes)}</span>
