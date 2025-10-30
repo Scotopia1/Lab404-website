@@ -55,6 +55,7 @@ import {
 import { apiClient } from '@/api/client';
 import { toast } from 'sonner';
 import { ManualOrderCreation } from './ManualOrderCreation';
+import { BulkOperationsBar } from './BulkOperationsBar';
 
 // Interfaces
 interface Order {
@@ -71,6 +72,7 @@ interface Order {
   payment_method?: 'cash_on_delivery' | 'whatsapp' | 'stripe' | 'paypal';
   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded' | 'partial';
+  payment_date?: string | null;
   total_amount: number;
   subtotal?: number;
   tax_amount?: number;
@@ -145,11 +147,15 @@ export const OrderManagement: React.FC = () => {
     page: 1,
     limit: 10,
   });
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showRefundDialog, setShowRefundDialog] = useState(false);
   const [refundAmount, setRefundAmount] = useState('');
+  const [showMarkPaidDialog, setShowMarkPaidDialog] = useState(false);
+  const [paymentDate, setPaymentDate] = useState('');
+  const [transactionId, setTransactionId] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showManualOrderCreation, setShowManualOrderCreation] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -220,6 +226,38 @@ export const OrderManagement: React.FC = () => {
     onError: () => toast.error('Failed to update WhatsApp status'),
   });
 
+  const markAsPaidMutation = useMutation({
+    mutationFn: ({ id, paymentDetails }: { id: string; paymentDetails?: any }) => 
+      apiClient.markOrderAsPaid(id, paymentDetails),
+    onSuccess: () => {
+      toast.success('Order marked as paid successfully');
+      queryClient.invalidateQueries(['admin-orders']);
+      queryClient.invalidateQueries(['order-stats']);
+      setShowMarkPaidDialog(false);
+      setPaymentDate('');
+      setTransactionId('');
+      setPaymentNotes('');
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to mark order as paid';
+      toast.error(errorMessage);
+    },
+  });
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: ({ orderIds, updates }: { orderIds: string[]; updates: any }) =>
+      apiClient.bulkUpdateOrders(orderIds, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['admin-orders']);
+      queryClient.invalidateQueries(['order-stats']);
+      setSelectedOrderIds(new Set());
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update orders');
+      throw error;
+    },
+  });
+
   // Computed values with data mapping
   const rawOrders = ordersData?.orders || [];
   const orders = rawOrders.map((order: any) => ({
@@ -258,20 +296,35 @@ export const OrderManagement: React.FC = () => {
   };
 
   const handleSelectOrder = (orderId: string) => {
-    setSelectedOrders(prev =>
-      prev.includes(orderId)
-        ? prev.filter(id => id !== orderId)
-        : [...prev, orderId]
-    );
+    setSelectedOrderIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
   };
 
-  const handleSelectAll = () => {
-    if (selectedOrders.length === orders.length) {
-      setSelectedOrders([]);
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allOrderIds = orders.map((order: Order) => order.id);
+      setSelectedOrderIds(new Set(allOrderIds));
     } else {
-      setSelectedOrders(orders.map((o: Order) => o.id));
+      setSelectedOrderIds(new Set());
     }
   };
+
+  const handleBulkUpdate = async (updates: any) => {
+    const orderIds = Array.from(selectedOrderIds);
+    await bulkUpdateMutation.mutateAsync({ orderIds, updates });
+  };
+
+  const isAllSelected = orders.length > 0 && selectedOrderIds.size === orders.length;
+  const isSomeSelected = selectedOrderIds.size > 0 && selectedOrderIds.size < orders.length;
+
+
 
   const handleUpdateOrderStatus = (orderId: string, status: string) => {
     updateOrderMutation.mutate({ id: orderId, data: { status } });
@@ -301,6 +354,26 @@ export const OrderManagement: React.FC = () => {
 
   const handleSendWhatsApp = (orderId: string) => {
     markWhatsAppSentMutation.mutate(orderId);
+  };
+
+  const handleMarkAsPaid = (order: Order) => {
+    setSelectedOrder(order);
+    setPaymentDate(new Date().toISOString().split('T')[0]); // Set today's date
+    setTransactionId('');
+    setPaymentNotes('');
+    setShowMarkPaidDialog(true);
+  };
+
+  const handleConfirmMarkAsPaid = () => {
+    if (!selectedOrder) return;
+
+    const paymentDetails = {
+      payment_date: paymentDate || undefined,
+      transaction_id: transactionId || undefined,
+      payment_notes: paymentNotes || undefined,
+    };
+
+    markAsPaidMutation.mutate({ id: selectedOrder.id, paymentDetails });
   };
 
   // WhatsApp Call Customer
@@ -794,8 +867,9 @@ export const OrderManagement: React.FC = () => {
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox
-                        checked={selectedOrders.length === orders.length && orders.length > 0}
+                        checked={isAllSelected}
                         onCheckedChange={handleSelectAll}
+                        aria-label="Select all orders"
                       />
                     </TableHead>
                     <TableHead
@@ -873,8 +947,9 @@ export const OrderManagement: React.FC = () => {
                       <TableRow key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-900">
                         <TableCell>
                           <Checkbox
-                            checked={selectedOrders.includes(order.id)}
+                            checked={selectedOrderIds.has(order.id)}
                             onCheckedChange={() => handleSelectOrder(order.id)}
+                            aria-label={`Select order ${order.order_number}`}
                           />
                         </TableCell>
                         <TableCell>
@@ -951,6 +1026,13 @@ export const OrderManagement: React.FC = () => {
                                 <DropdownMenuItem onClick={() => handleSendWhatsApp(order.id)}>
                                   <MessageCircle className="h-4 w-4 mr-2" />
                                   {order.whatsapp_sent ? 'Mark WhatsApp Sent' : 'Send WhatsApp'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleMarkAsPaid(order)}
+                                  disabled={order.payment_status === 'paid' || order.payment_status === 'refunded'}
+                                >
+                                  <DollarSign className="h-4 w-4 mr-2" />
+                                  Mark as Paid
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => handleUpdateOrderStatus(order.id, 'confirmed')}>
@@ -1067,6 +1149,20 @@ export const OrderManagement: React.FC = () => {
                         <span className="text-gray-500">Payment:</span>
                         {getPaymentStatusBadge(selectedOrder.payment_status)}
                       </div>
+                      {selectedOrder.payment_date && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Payment Date:</span>
+                          <span className="font-medium text-green-600">
+                            {new Date(selectedOrder.payment_date).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-gray-500">Total Amount:</span>
                         <span className="font-medium">${selectedOrder.total_amount.toFixed(2)}</span>
@@ -1253,6 +1349,19 @@ export const OrderManagement: React.FC = () => {
 
           <DialogFooter className="gap-3">
             <div className="flex gap-2 mr-auto">
+              {selectedOrder && selectedOrder.payment_status !== 'paid' && selectedOrder.payment_status !== 'refunded' && (
+                <Button
+                  onClick={() => {
+                    setShowOrderDetails(false);
+                    handleMarkAsPaid(selectedOrder);
+                  }}
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+                  variant="outline"
+                >
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Mark as Paid
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() => handleCallCustomer(selectedOrder!)}
@@ -1339,6 +1448,103 @@ export const OrderManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Mark as Paid Dialog */}
+      <Dialog open={showMarkPaidDialog} onOpenChange={setShowMarkPaidDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark Order as Paid</DialogTitle>
+            <DialogDescription>
+              Confirm payment for order #{selectedOrder?.order_number}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="payment_date">Payment Date</Label>
+              <Input
+                id="payment_date"
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Date when payment was received
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="transaction_id">Transaction ID (Optional)</Label>
+              <Input
+                id="transaction_id"
+                type="text"
+                value={transactionId}
+                onChange={(e) => setTransactionId(e.target.value)}
+                placeholder="Enter transaction reference number"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Bank transfer reference, receipt number, etc.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="payment_notes">Payment Notes (Optional)</Label>
+              <Textarea
+                id="payment_notes"
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                placeholder="Additional payment information or notes"
+                rows={3}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Any additional details about the payment
+              </p>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+              <div className="flex items-start gap-2">
+                <DollarSign className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Order Total: ${selectedOrder?.total_amount.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    This will change the payment status to "Paid"
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowMarkPaidDialog(false)}
+              disabled={markAsPaidMutation.isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmMarkAsPaid}
+              disabled={markAsPaidMutation.isLoading || !paymentDate}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {markAsPaidMutation.isLoading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Marking as Paid...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Confirm Payment
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Manual Order Creation Dialog */}
       <ManualOrderCreation
         isOpen={showManualOrderCreation}
@@ -1348,6 +1554,13 @@ export const OrderManagement: React.FC = () => {
           refreshData();
           toast.success('Order created successfully!');
         }}
+      />
+
+      {/* Bulk Operations Bar */}
+      <BulkOperationsBar
+        selectedCount={selectedOrderIds.size}
+        onClearSelection={() => setSelectedOrderIds(new Set())}
+        onBulkUpdate={handleBulkUpdate}
       />
     </div>
   );

@@ -1050,6 +1050,25 @@ class ApiClient {
     return this.post(`/admin/orders/${id}/whatsapp`);
   }
 
+  async markOrderAsPaid(id: string, paymentDetails?: {
+    payment_date?: string;
+    transaction_id?: string;
+    payment_notes?: string;
+  }): Promise<any> {
+    return this.put(`/admin/orders/${id}/mark-paid`, paymentDetails || {});
+  }
+
+  async bulkUpdateOrders(orderIds: string[], updates: {
+    status?: string;
+    payment_status?: string;
+    payment_date?: string | null;
+  }): Promise<{ updated_count: number; orders: any[] }> {
+    return this.post('/admin/orders/bulk-update', {
+      order_ids: orderIds,
+      ...updates,
+    });
+  }
+
   async getOrderStats(): Promise<any> {
     return this.get('/admin/orders/stats');
   }
