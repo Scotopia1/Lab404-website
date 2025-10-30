@@ -609,7 +609,7 @@ export const ProductManagement: React.FC = () => {
       if (filters.category) queryParams.append('category', filters.category);
       if (filters.brand) queryParams.append('brand', filters.brand);
       
-      const url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/products/admin/csv/export?${queryParams.toString()}`;
+      const url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'}/products/admin/csv/export?${queryParams.toString()}`;
       
       const response = await fetch(url, {
         headers: {
@@ -639,7 +639,7 @@ export const ProductManagement: React.FC = () => {
   const handleDownloadTemplate = async () => {
     try {
       const token = TokenManager.getAccessToken();
-      const url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/products/admin/csv/template`;
+      const url = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'}/products/admin/csv/template`;
       
       const response = await fetch(url, {
         headers: {
@@ -677,7 +677,7 @@ export const ProductManagement: React.FC = () => {
       const text = await csvFile.text();
       const token = TokenManager.getAccessToken();
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/products/admin/csv/import`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'}/products/admin/csv/import`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
