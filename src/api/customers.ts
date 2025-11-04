@@ -8,25 +8,25 @@ export const customersApi = {
    * Search customers for autocomplete dropdown
    */
   async searchCustomers(query: string, limit: number = 20): Promise<CustomerSearchResult[]> {
-    const response = await apiClient.request<{ data: CustomerSearchResult[] }>(
+    const response = await apiClient.request<CustomerSearchResult[]>(
       `/admin/customers/search?q=${encodeURIComponent(query)}&limit=${limit}`,
       {
         method: 'GET',
       }
     );
-    return response.data;
+    return response;
   },
 
   /**
    * Get customer by ID with full details
    */
   async getCustomerById(customerId: string): Promise<CustomerWithDetails> {
-    const response = await apiClient.request<{ data: CustomerWithDetails }>(
+    const response = await apiClient.request<CustomerWithDetails>(
       `/admin/customers/${customerId}`,
       {
         method: 'GET',
       }
     );
-    return response.data;
+    return response;
   },
 };

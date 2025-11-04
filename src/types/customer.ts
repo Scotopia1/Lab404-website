@@ -64,6 +64,8 @@ export interface CustomerSearchResult {
   name: string;
   phone: string | null;
   total_orders: number;
+  company: string | null;
+  city: string | null;
   quotations_count?: number;
 }
 

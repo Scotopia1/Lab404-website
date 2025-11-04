@@ -36,18 +36,23 @@ const CustomerSearchSelect: React.FC<CustomerSearchSelectProps> = ({
   const [loading, setLoading] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerSearchResult | null>(null);
 
-  // Debounce search
+  // Load top customers when dropdown opens (empty search)
   useEffect(() => {
-    if (!searchQuery || searchQuery.length < 1) {
-      setCustomers([]);
-      return;
+    if (open && customers.length === 0 && !searchQuery) {
+      setSearchQuery(''); // Trigger search with empty query to load top customers
     }
+  }, [open]);
 
+  // Debounce search - allow empty query to show top customers
+  useEffect(() => {
     const timeoutId = setTimeout(async () => {
       try {
         setLoading(true);
         const results = await customersApi.searchCustomers(searchQuery, 20);
-        setCustomers(Array.isArray(results) ? results : []);
+        // Handle both array response and wrapped response {data: []}
+        const customerList = Array.isArray(results) ? results : (results as any)?.data || [];
+        setCustomers(customerList);
+        console.log('Search results:', customerList.length, 'customers');
       } catch (error) {
         console.error('Error searching customers:', error);
         setCustomers([]);
@@ -109,14 +114,12 @@ const CustomerSearchSelect: React.FC<CustomerSearchSelectProps> = ({
             {loading ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
-              </div>
-            ) : !searchQuery || searchQuery.length < 1 ? (
-              <div className="py-6 text-center text-sm">
-                Type to search for customers
+                <span className="ml-2 text-sm text-muted-foreground">Searching customers...</span>
               </div>
             ) : (
-              <div className="py-6 text-center text-sm">No customers found</div>
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                {!searchQuery ? 'Start typing to search customers...' : `No customers match "${searchQuery}"`}
+              </div>
             )}
           </CommandEmpty>
           {Array.isArray(customers) && customers.length > 0 && (
