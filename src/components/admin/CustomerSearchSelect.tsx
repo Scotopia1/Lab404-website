@@ -48,7 +48,7 @@ const CustomerSearchSelect: React.FC<CustomerSearchSelectProps> = ({
     const timeoutId = setTimeout(async () => {
       try {
         setLoading(true);
-        const results = await customersApi.searchCustomers(searchQuery, 20);
+        const results = await customersApi.searchCustomers(searchQuery, 50);
         // Handle both array response and wrapped response {data: []}
         const customerList = Array.isArray(results) ? results : (results as any)?.data || [];
         setCustomers(customerList);
@@ -104,7 +104,7 @@ const CustomerSearchSelect: React.FC<CustomerSearchSelectProps> = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search by name or email..."
             value={searchQuery}
