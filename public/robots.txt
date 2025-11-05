@@ -2,6 +2,4 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: http://localhost:3000/sitemap.xml
-# Note: In production, replace with your actual domain
-# Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://lab404electronics.com/sitemap.xml
