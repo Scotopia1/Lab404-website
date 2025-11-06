@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://lab404electronics.com/sitemap.xml
+Sitemap: https://api.lab404electronics.com/sitemap.xml
