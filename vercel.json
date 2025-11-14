@@ -3,6 +3,14 @@
   "installCommand": "pnpm install",
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "https://api.lab404electronics.com/sitemap.xml"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "https://api.lab404electronics.com/robots.txt"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
