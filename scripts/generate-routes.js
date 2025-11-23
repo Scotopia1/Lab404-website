@@ -16,34 +16,31 @@ async function fetchDynamicRoutes() {
   const apiBaseUrl = process.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
   try {
-    // Fetch all products
-    console.log('📦 Fetching products for sitemap...');
-    const productsResponse = await fetch(`${apiBaseUrl}/products?limit=1000&is_active=true`);
-    if (productsResponse.ok) {
-      const productsData = await productsResponse.json();
-      const products = productsData.data || [];
+    // Use the sitemap data endpoint for efficient fetching
+    console.log('📦 Fetching sitemap data from API...');
+    const sitemapResponse = await fetch(`${apiBaseUrl}/sitemap/data`);
 
-      products.forEach((product) => {
-        routes.push(`/product/${product.id}`);
-      });
-      console.log(`✅ Added ${products.length} products to sitemap`);
+    if (sitemapResponse.ok) {
+      const sitemapData = await sitemapResponse.json();
+
+      if (sitemapData.success && sitemapData.data) {
+        // Add product routes
+        const products = sitemapData.data.products || [];
+        products.forEach((product) => {
+          routes.push(product.url);
+        });
+        console.log(`✅ Added ${products.length} products to sitemap`);
+
+        // Add blog routes
+        const blogs = sitemapData.data.blogs || [];
+        blogs.forEach((blog) => {
+          routes.push(blog.url);
+        });
+        console.log(`✅ Added ${blogs.length} blog posts to sitemap`);
+      }
     } else {
-      console.warn('⚠️  Failed to fetch products:', productsResponse.statusText);
-    }
-
-    // Fetch all published blog posts
-    console.log('📝 Fetching blog posts for sitemap...');
-    const blogsResponse = await fetch(`${apiBaseUrl}/blogs/posts?limit=1000&status=published`);
-    if (blogsResponse.ok) {
-      const blogsData = await blogsResponse.json();
-      const blogs = blogsData.data || [];
-
-      blogs.forEach((blog) => {
-        routes.push(`/blog/${blog.slug}`);
-      });
-      console.log(`✅ Added ${blogs.length} blog posts to sitemap`);
-    } else {
-      console.warn('⚠️  Failed to fetch blog posts:', blogsResponse.statusText);
+      const errorText = await sitemapResponse.text();
+      console.warn('⚠️  Failed to fetch sitemap data:', errorText);
     }
   } catch (error) {
     console.error('❌ Error fetching dynamic routes for sitemap:', error);
