@@ -4,6 +4,19 @@ import path from "path";
 import { viteSourceLocator } from "@metagptx/vite-plugin-source-locator";
 import { visualizer } from "rollup-plugin-visualizer";
 import { VitePWA } from 'vite-plugin-pwa';
+import sitemap from 'vite-plugin-sitemap';
+import { readFileSync, existsSync } from 'fs';
+
+// Load dynamic routes from pre-generated file
+let dynamicRoutes: string[] = [];
+const dynamicRoutesPath = path.resolve(__dirname, 'dynamic-routes.json');
+if (existsSync(dynamicRoutesPath)) {
+  try {
+    dynamicRoutes = JSON.parse(readFileSync(dynamicRoutesPath, 'utf-8'));
+  } catch (error) {
+    console.warn('⚠️  Failed to load dynamic routes, using empty array');
+  }
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -48,6 +61,26 @@ export default defineConfig(({ mode }) => ({
       devOptions: {
         enabled: false
       }
+    }),
+    // Sitemap generation - only in build mode
+    mode === 'production' && sitemap({
+      hostname: process.env.VITE_COMPANY_WEBSITE || 'https://lab404electronics.com',
+      dynamicRoutes: [
+        ...dynamicRoutes,
+        '/store',
+        '/blog',
+        '/checkout'
+      ],
+      exclude: ['/404'],
+      readable: true,
+      generateRobotsTxt: true,
+      robots: [
+        {
+          userAgent: '*',
+          allow: '/',
+          disallow: ['/admin/', '/theElitesSolutions/'],
+        }
+      ]
     }),
     // Bundle analyzer - only in build mode
     mode === 'analyze' && visualizer({
